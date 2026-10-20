@@ -114,6 +114,14 @@
  * @property {THREE.Group} group
  * @property {(scene:THREE.Scene) => void} apply           pone fondo/niebla en la escena
  * @property {(dt:number, cameraPosition:THREE.Vector3) => void} update  clima, el sol sigue a la cámara para las sombras
+ * @property {() => void} dispose
+ */
+
+/*
+ * Extras de src/art: createCharacterPreview(characterId) → {group, update(dt), model} (menús);
+ * createProp(kind, theme, opts?) con opts {light, variant, random}.
+ * Extra de src/audio: audio.setEngine(speedRatio, boosting, drifting?).
+ * Pausa: la UI es dueña de la tecla de pausa; gameplay solo expone race.pause(bool).
  */
 
 /**
