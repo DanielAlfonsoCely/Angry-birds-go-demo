@@ -1,5 +1,5 @@
 // Buses de mezcla: música (con "duck") y sfx → master → compresor suave → salida.
-export const MUSIC_LEVEL = 0.55; // la música va por debajo de los efectos
+export const MUSIC_LEVEL = 0.75; // la música va por debajo de los efectos
 
 export function createBuses(ctx, destination = ctx.destination) {
   const comp = ctx.createDynamicsCompressor();

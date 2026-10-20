@@ -18,23 +18,23 @@ export const MELODIC = {
   // Pluck tipo campanita suave (menú)
   pluck(ctx, dest, t, f, dur, vel) {
     const d = Math.min(0.9, 0.25 + dur);
-    tone(ctx, dest, t, { type: 'triangle', f, dur: d, gain: 0.22 * vel });
-    tone(ctx, dest, t, { type: 'sine', f: f * 2, dur: d * 0.5, gain: 0.08 * vel });
-    tone(ctx, dest, t, { type: 'sine', f: f * 4, dur: 0.06, gain: 0.03 * vel });
+    tone(ctx, dest, t, { type: 'triangle', f, dur: d, gain: 0.45 * vel });
+    tone(ctx, dest, t, { type: 'sine', f: f * 2, dur: d * 0.5, gain: 0.16 * vel });
+    tone(ctx, dest, t, { type: 'sine', f: f * 4, dur: 0.06, gain: 0.05 * vel });
   },
 
   // Marimba: fundamental + parcial agudo que muere rápido (selva)
   marimba(ctx, dest, t, f, dur, vel) {
-    tone(ctx, dest, t, { type: 'sine', f, dur: Math.min(0.6, 0.2 + dur), gain: 0.28 * vel, attack: 0.002 });
-    tone(ctx, dest, t, { type: 'sine', f: f * 4, dur: 0.07, gain: 0.08 * vel, attack: 0.001 });
-    tone(ctx, dest, t, { type: 'triangle', f: f * 2.01, dur: 0.15, gain: 0.05 * vel, attack: 0.002 });
+    tone(ctx, dest, t, { type: 'sine', f, dur: Math.min(0.6, 0.2 + dur), gain: 0.5 * vel, attack: 0.002 });
+    tone(ctx, dest, t, { type: 'sine', f: f * 4, dur: 0.07, gain: 0.14 * vel, attack: 0.001 });
+    tone(ctx, dest, t, { type: 'triangle', f: f * 2.01, dur: 0.15, gain: 0.09 * vel, attack: 0.002 });
   },
 
   // Lead cuadrado con vibrato (pico)
   squareLead(ctx, dest, t, f, dur, vel) {
     const end = t + dur + 0.2;
     const g = ctx.createGain();
-    const stop = adsr(g.gain, t, 0.09 * vel, 0.01, 0.12, 0.7, dur * 0.92, 0.08);
+    const stop = adsr(g.gain, t, 0.16 * vel, 0.01, 0.12, 0.7, dur * 0.92, 0.08);
     const flt = ctx.createBiquadFilter();
     flt.type = 'lowpass';
     flt.frequency.value = 3800;
@@ -55,7 +55,7 @@ export const MELODIC = {
   sawLead(ctx, dest, t, f, dur, vel) {
     const end = t + dur + 0.2;
     const g = ctx.createGain();
-    adsr(g.gain, t, 0.06 * vel, 0.008, 0.1, 0.75, dur * 0.95, 0.07);
+    adsr(g.gain, t, 0.14 * vel, 0.008, 0.1, 0.75, dur * 0.95, 0.07);
     const flt = ctx.createBiquadFilter();
     flt.type = 'lowpass';
     flt.Q.value = 2;
@@ -90,14 +90,14 @@ export const MELODIC = {
 
   // Acorde corto (stab) de cuadradas
   stab(ctx, dest, t, f, dur, vel) {
-    tone(ctx, dest, t, { type: 'square', f, dur: Math.min(0.16, dur), gain: 0.035 * vel, filter: { f: 2200, f2: 800 } });
+    tone(ctx, dest, t, { type: 'square', f, dur: Math.min(0.16, dur), gain: 0.08 * vel, filter: { f: 2200, f2: 800 } });
   },
 
   // Bajo redondo (seno + triángulo)
   bassRound(ctx, dest, t, f, dur, vel) {
     const end = t + dur + 0.15;
     const g = ctx.createGain();
-    adsr(g.gain, t, 0.3 * vel, 0.006, 0.15, 0.6, dur * 0.9, 0.06);
+    adsr(g.gain, t, 0.2 * vel, 0.006, 0.15, 0.6, dur * 0.9, 0.06);
     osc(ctx, 'sine', f, t, end).connect(g);
     const tg = ctx.createGain();
     tg.gain.value = 0.35;
@@ -109,7 +109,7 @@ export const MELODIC = {
   bassPluck(ctx, dest, t, f, dur, vel) {
     const end = t + dur + 0.15;
     const g = ctx.createGain();
-    adsr(g.gain, t, 0.16 * vel, 0.005, 0.12, 0.5, dur * 0.85, 0.05);
+    adsr(g.gain, t, 0.1 * vel, 0.005, 0.12, 0.5, dur * 0.85, 0.05);
     const flt = ctx.createBiquadFilter();
     flt.type = 'lowpass';
     flt.Q.value = 3;
@@ -126,7 +126,7 @@ export const MELODIC = {
   bassSaw(ctx, dest, t, f, dur, vel) {
     const end = t + dur + 0.1;
     const g = ctx.createGain();
-    adsr(g.gain, t, 0.13 * vel, 0.004, 0.08, 0.6, dur * 0.85, 0.04);
+    adsr(g.gain, t, 0.085 * vel, 0.004, 0.08, 0.6, dur * 0.85, 0.04);
     const flt = ctx.createBiquadFilter();
     flt.type = 'lowpass';
     flt.Q.value = 6;

@@ -35,13 +35,13 @@ export const SFX_DEFS = {
   catapultStretch(ctx, out, t, p) {
     const dur = 1.25;
     tone(ctx, out, t, {
-      type: 'sawtooth', f: 65 * p, f2: 200 * p, dur, gain: 0.22,
+      type: 'sawtooth', f: 65 * p, f2: 200 * p, dur, gain: 0.3,
       env: [[0.15, 1], [1.05, 0.9], [dur, 0]],
       filter: { type: 'bandpass', f: 400, f2: 1500, q: 3 },
       trem: { rate: 16, depth: 0.35 },
     });
     noise(ctx, out, t, {
-      type: 'bandpass', f: 1800, f2: 3200, q: 8, dur, gain: 0.35,
+      type: 'bandpass', f: 1800, f2: 3200, q: 8, dur, gain: 0.45,
       env: [[0.2, 0.6], [1.0, 1], [dur, 0]],
       trem: { rate: 22, depth: 0.5, type: 'square' },
     });
@@ -62,9 +62,9 @@ export const SFX_DEFS = {
 
   // Moneda: dos notas brillantes ascendentes
   coin(ctx, out, t, p) {
-    tone(ctx, out, t, { type: 'square', f: 988 * p, dur: 0.08, gain: 0.1, filter: { f: 5000 } });
-    tone(ctx, out, t + 0.07, { type: 'square', f: 1319 * p, dur: 0.38, gain: 0.1, filter: { f: 6000 } });
-    tone(ctx, out, t + 0.07, { type: 'sine', f: 2637 * p, dur: 0.25, gain: 0.06 });
+    tone(ctx, out, t, { type: 'square', f: 988 * p, dur: 0.08, gain: 0.14, filter: { f: 5000 } });
+    tone(ctx, out, t + 0.07, { type: 'square', f: 1319 * p, dur: 0.38, gain: 0.14, filter: { f: 6000 } });
+    tone(ctx, out, t + 0.07, { type: 'sine', f: 2637 * p, dur: 0.25, gain: 0.08 });
     return 0.48;
   },
 
@@ -81,8 +81,8 @@ export const SFX_DEFS = {
 
   // Uso genérico de objeto: "fuip"
   itemUse(ctx, out, t, p) {
-    noise(ctx, out, t, { type: 'bandpass', f: 600, f2: 2800, q: 2, dur: 0.24, attack: 0.02, gain: 0.35 });
-    tone(ctx, out, t, { type: 'sine', f: 500 * p, f2: 1100 * p, dur: 0.12, gain: 0.15 });
+    noise(ctx, out, t, { type: 'bandpass', f: 600, f2: 2800, q: 2, dur: 0.24, attack: 0.02, gain: 0.5 });
+    tone(ctx, out, t, { type: 'sine', f: 500 * p, f2: 1100 * p, dur: 0.12, gain: 0.2 });
     return 0.3;
   },
 
@@ -97,7 +97,7 @@ export const SFX_DEFS = {
 
   // Inicio de derrape: chirrido corto de llanta
   driftStart(ctx, out, t, p) {
-    noise(ctx, out, t, { type: 'bandpass', f: 1900 * p, f2: 1500 * p, q: 9, dur: 0.3, attack: 0.02, gain: 0.7 });
+    noise(ctx, out, t, { type: 'bandpass', f: 1900 * p, f2: 1500 * p, q: 9, dur: 0.3, attack: 0.02, gain: 0.95 });
     tone(ctx, out, t, { type: 'sine', f: 950 * p, f2: 1150 * p, dur: 0.2, gain: 0.05 });
     return 0.33;
   },
@@ -107,13 +107,13 @@ export const SFX_DEFS = {
     const lv2 = (o.level ?? 1) >= 2;
     const f0 = lv2 ? 1000 : 700;
     const f1 = lv2 ? 2600 : 1700;
-    tone(ctx, out, t, { type: 'square', f: f0 * p, f2: f1 * p, dur: 0.16, gain: 0.09, filter: { f: lv2 ? 7000 : 3500 } });
+    tone(ctx, out, t, { type: 'square', f: f0 * p, f2: f1 * p, dur: 0.16, gain: 0.12, filter: { f: lv2 ? 7000 : 3500 } });
     noise(ctx, out, t, { type: 'highpass', f: lv2 ? 5000 : 3500, dur: 0.22, gain: 0.14, trem: { rate: 45, depth: 0.5, type: 'square' } });
     if (lv2) {
       tone(ctx, out, t + 0.08, { type: 'square', f: 1400 * p, f2: 3200 * p, dur: 0.16, gain: 0.07, filter: { f: 8000 } });
       tone(ctx, out, t + 0.12, { type: 'triangle', f: 3136 * p, dur: 0.3, gain: 0.06 });
     }
-    noise(ctx, out, t + 0.05, { type: 'bandpass', f: 400, f2: 1800, q: 1, dur: 0.42, attack: 0.05, gain: lv2 ? 0.3 : 0.22 });
+    noise(ctx, out, t + 0.05, { type: 'bandpass', f: 400, f2: 1800, q: 1, dur: 0.42, attack: 0.05, gain: lv2 ? 0.42 : 0.32 });
     return 0.5;
   },
 
@@ -134,10 +134,10 @@ export const SFX_DEFS = {
 
   // Truco: giro con viento + campanita si sale bien
   trick(ctx, out, t, p, o) {
-    noise(ctx, out, t, { type: 'bandpass', f: 900, q: 3, dur: 0.42, attack: 0.06, gain: 0.35, flfo: { rate: 14, depth: 600 } });
+    noise(ctx, out, t, { type: 'bandpass', f: 900, q: 3, dur: 0.42, attack: 0.06, gain: 0.5, flfo: { rate: 14, depth: 600 } });
     if (o.success !== false) {
       [84, 88, 91, 96].forEach((m, i) => {
-        tone(ctx, out, t + 0.15 + i * 0.06, { type: 'triangle', f: mtof(m) * p, dur: 0.28, gain: 0.09 });
+        tone(ctx, out, t + 0.15 + i * 0.06, { type: 'triangle', f: mtof(m) * p, dur: 0.28, gain: 0.12 });
         tone(ctx, out, t + 0.15 + i * 0.06, { type: 'sine', f: mtof(m + 12) * p, dur: 0.15, gain: 0.03 });
       });
     }
@@ -264,8 +264,8 @@ export const SFX_DEFS = {
   },
 
   error(ctx, out, t, p) {
-    tone(ctx, out, t, { type: 'square', f: 196 * p, dur: 0.1, gain: 0.14, filter: { f: 1200 } });
-    tone(ctx, out, t + 0.13, { type: 'square', f: 155 * p, dur: 0.18, gain: 0.14, filter: { f: 1200 } });
+    tone(ctx, out, t, { type: 'square', f: 196 * p, dur: 0.1, gain: 0.18, filter: { f: 1200 } });
+    tone(ctx, out, t + 0.13, { type: 'square', f: 155 * p, dur: 0.18, gain: 0.18, filter: { f: 1200 } });
     return 0.33;
   },
 };
