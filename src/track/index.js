@@ -1,7 +1,15 @@
-// STUB del orquestador: pista mínima (cinta en bajada) para que el juego corra.
-// El Agente de Pistas reemplaza este módulo respetando el contrato Track (src/core/contracts.js).
+// Sistema de pistas: definición por datos (defs/*.js) → línea central + tabla de frames → geometría, objetos y decoración.
+// API pública: TRACKS y buildTrack(trackId) (contrato Track en src/core/contracts.js).
 import * as THREE from 'three';
-import { createProp } from '../art/index.js';
+import { TRACK_DEFS } from './defs/index.js';
+import { buildPath } from './path.js';
+import { createQueries } from './query.js';
+import { createGroundIndex } from './ground.js';
+import { createLighting } from './lighting.js';
+import { buildRoad } from './road.js';
+import { layoutPickups, buildPickups } from './pickups.js';
+import { buildTerrain } from './terrain.js';
+import { buildDecor } from './decor.js';
 
 export const TRACKS = [
   { id: 'pico',  name: 'Pico Escarcha', theme: 'snow' },
@@ -9,98 +17,95 @@ export const TRACKS = [
   { id: 'canon', name: 'Cañón Brasa',   theme: 'volcano' },
 ];
 
+export { TRACK_DEFS } from './defs/index.js';
+export { designJump, JUMP_PHYS } from './ballistics.js';
+
+const START_LINE_S = 52;  // línea de salida (m); la parrilla queda detrás
+const GRID_FRONT_S = 46;  // primera fila de la parrilla
+const GRID_ROW_GAP = 7;
+const GRID_LATERAL = 3.4;
+
+// Registro de recursos creados para liberarlos en dispose()
+function createResources() {
+  const geos = new Set(), mats = new Set(), texs = new Set();
+  return {
+    disposables: [],
+    geo: (g) => (geos.add(g), g),
+    mat: (m) => (mats.add(m), m),
+    tex: (t) => (texs.add(t), t),
+    dispose() {
+      for (const g of geos) g.dispose();
+      for (const m of mats) m.dispose();
+      for (const t of texs) t.dispose();
+      for (const d of this.disposables) d.dispose?.();
+      geos.clear(); mats.clear(); texs.clear();
+    },
+  };
+}
+
 /** @returns {import('../core/contracts.js').Track} */
 export function buildTrack(trackId) {
   const meta = TRACKS.find((t) => t.id === trackId) ?? TRACKS[0];
-  const pts = [];
-  for (let i = 0; i <= 20; i++) {
-    pts.push(new THREE.Vector3(Math.sin(i * 0.6) * 40, -i * 18, -i * 90));
-  }
-  const curve = new THREE.CatmullRomCurve3(pts);
-  const length = curve.getLength();
-  const halfWidth = 8;
+  const def = TRACK_DEFS[meta.id];
+  const f = buildPath(def);
+  const { sample, closestT } = createQueries(f);
   const group = new THREE.Group();
+  group.name = `track-${meta.id}`;
+  const res = createResources();
+  const ground = createGroundIndex();
+  const light = createLighting(f, meta.theme);
+  const startLineIndex = Math.round(START_LINE_S / f.ds);
+  const ctx = { theme: meta.theme, def, group, res, ground, light, startLineIndex, frames: f };
 
-  const sample = (t) => {
-    t = THREE.MathUtils.clamp(t, 0, 1);
-    const position = curve.getPointAt(t);
-    const tangent = curve.getTangentAt(t).normalize();
-    const right = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
-    const up = new THREE.Vector3().crossVectors(right, tangent).normalize();
-    return { position, tangent, right, up, halfWidth, segmentType: 'open', hasGround: true, ceilingHeight: null };
-  };
+  const { groundMeshes } = buildRoad(f, ctx);
+  ground.build();
+  const layout = layoutPickups(f, def);
+  const pickups = buildPickups(f, ctx, layout);
+  const terrain = buildTerrain(f, ctx);
+  const decor = buildDecor(f, ctx, layout);
 
-  // Cinta de suelo
-  const segs = 400;
-  const positions = [];
-  const indices = [];
-  for (let i = 0; i <= segs; i++) {
-    const s = sample(i / segs);
-    const l = s.position.clone().addScaledVector(s.right, -halfWidth - 2);
-    const r = s.position.clone().addScaledVector(s.right, halfWidth + 2);
-    positions.push(l.x, l.y, l.z, r.x, r.y, r.z);
-    if (i < segs) {
-      const a = i * 2;
-      indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
-    }
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geo.setIndex(indices);
-  geo.computeVertexNormals();
-  const ground = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0xd9cbb0, side: THREE.DoubleSide }));
-  ground.receiveShadow = true;
-  group.add(ground);
-
-  for (let i = 1; i < 40; i++) {
-    const s = sample(i / 40);
-    for (const side of [-1, 1]) {
-      const p = createProp(i % 3 ? 'tree' : 'rock', meta.theme);
-      p.position.copy(s.position).addScaledVector(s.right, side * (halfWidth + 6 + Math.random() * 10));
-      group.add(p);
-    }
-  }
-
-  const raycaster = new THREE.Raycaster();
-  const down = new THREE.Vector3(0, -1, 0);
-  const groundMeshes = [ground];
+  const _q = new THREE.Quaternion();
+  const _m = new THREE.Matrix4();
+  const _o = new THREE.Vector3();
 
   return {
-    id: meta.id, name: meta.name, theme: meta.theme, group, groundMeshes, length,
+    id: meta.id,
+    name: meta.name,
+    theme: meta.theme,
+    group,
+    groundMeshes,
+    length: f.length,
     sample,
-    closestT(pos, hintT) {
-      let best = 0, bestD = Infinity;
-      const lo = hintT == null ? 0 : Math.max(0, hintT - 0.05);
-      const hi = hintT == null ? 1 : Math.min(1, hintT + 0.05);
-      for (let i = 0; i <= 200; i++) {
-        const t = lo + (hi - lo) * (i / 200);
-        const d = curve.getPointAt(t).distanceToSquared(pos);
-        if (d < bestD) { bestD = d; best = t; }
-      }
-      return best;
-    },
-    getGroundAt(pos) {
-      raycaster.set(new THREE.Vector3(pos.x, pos.y + 3, pos.z), down);
-      const hit = raycaster.intersectObjects(groundMeshes, false)[0];
-      if (!hit) return null;
-      const normal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
-      if (normal.y < 0) normal.negate();
-      return { height: hit.point.y, normal, object: hit.object };
-    },
+    closestT,
+    getGroundAt: ground.getGroundAt,
     spawnGrid(count) {
       const out = [];
-      for (let i = 0; i < count; i++) {
-        const s = sample(0.004 + Math.floor(i / 2) * 0.004);
-        const position = s.position.clone().addScaledVector(s.right, (i % 2 ? 1 : -1) * 3.5);
-        const m = new THREE.Matrix4().lookAt(new THREE.Vector3(), s.tangent, s.up);
-        out.push({ position, quaternion: new THREE.Quaternion().setFromRotationMatrix(m) });
+      for (let k = 0; k < count; k++) {
+        const s = sample((GRID_FRONT_S - Math.floor(k / 2) * GRID_ROW_GAP) / f.length);
+        const position = s.position.clone().addScaledVector(s.right, (k % 2 ? 1 : -1) * GRID_LATERAL);
+        const g = ground.getGroundAt(position);
+        if (g) position.y = g.height;
+        _m.lookAt(_o, s.tangent, s.up);
+        out.push({ position, quaternion: _q.setFromRotationMatrix(_m).clone() });
       }
       return out;
     },
-    coins: [],
-    itemBoxes: [],
-    boostPads: [],
-    update() {},
-    dispose() { geo.dispose(); },
+    coins: pickups.coins,
+    itemBoxes: pickups.itemBoxes,
+    boostPads: pickups.boostPads,
+    update(dt, time) {
+      pickups.update(dt, time);
+      terrain.update(dt, time);
+      decor.update(dt, time);
+    },
+    dispose() {
+      decor.dispose?.();
+      res.dispose();
+      group.clear();
+    },
+    // Extras (fuera del contrato) útiles para depurar / herramientas
+    frames: f,
+    jumps: f.jumps,
+    startLineT: startLineIndex / f.finishIndex,
   };
 }
