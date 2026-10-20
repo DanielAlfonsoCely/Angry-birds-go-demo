@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cumbre Rush · Galería de arte</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1b2a; font-family: system-ui, sans-serif; }
+    #app { position: fixed; inset: 0; }
+    #labels { position: fixed; inset: 0; pointer-events: none; }
+    .lbl { position: absolute; transform: translate(-50%, 0); color: #fff; font-weight: 700; font-size: 13px;
+      text-shadow: 0 1px 3px #000, 0 0 6px #000; white-space: nowrap; }
+    #nav { position: fixed; left: 8px; top: 8px; display: flex; gap: 6px; flex-wrap: wrap; font-size: 12px; }
+    #nav a { color: #fff; background: #0008; padding: 4px 8px; border-radius: 6px; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="labels"></div>
+  <div id="nav"></div>
+  <script type="module" src="/src/art/gallery.js"></script>
+</body>
+</html>

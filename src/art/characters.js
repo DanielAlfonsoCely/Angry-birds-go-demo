@@ -17,7 +17,11 @@ const INK = 0x1d1b26;
 const PINK = 0xff8fab;
 const CREAM = 0xfff1d6;
 
-const sph = (r, w = 18, h = 14) => new THREE.SphereGeometry(r, w, h);
+// esferas con detalle según tamaño (las pequeñas no necesitan tantos polígonos)
+const sph = (r, w = 16, h = 12) => {
+  const k = r < 0.05 ? 0.5 : r < 0.1 ? 0.7 : r < 0.2 ? 0.85 : 1;
+  return new THREE.SphereGeometry(r, Math.max(6, Math.round(w * k)), Math.max(4, Math.round(h * k)));
+};
 const cone = (r, h, s = 10) => new THREE.ConeGeometry(r, h, s);
 const rbox = (w, h, d, r) => new RoundedBoxGeometry(w, h, d, 3, r);
 
@@ -37,8 +41,8 @@ function eyes(b, { spread, r, y = 0, z = 0, lid = null, out = 0.12, pupil = 0.52
     b.add(sph(r * 0.08, 8, 6), WHITE, { p: [pc.x - r * 0.16, pc.y - r * 0.2, pc.z - r * 0.22], mat: 'glow' });
     if (lid != null) {
       // párpado superior del color de la piel (da expresión de "concentrado")
-      const lidGeo = new THREE.SphereGeometry(r * 1.06, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.36);
-      b.add(lidGeo, lid, { p: [ex, y, z], r: [-0.55, 0, sx * -0.18] });
+      const lidGeo = new THREE.SphereGeometry(r * 1.06, 18, 8, 0, Math.PI * 2, 0, Math.PI * 0.3);
+      b.add(lidGeo, lid, { p: [ex, y, z], r: [-0.12, 0, sx * -0.22] });
     }
   }
 }
@@ -54,6 +58,17 @@ function brows(b, { spread, y, z, len = 0.16, thick = 0.035, color = INK, tilt =
 function smile(b, { r, tube = 0.025, y, z, color = 0x5a1f2b, arc = Math.PI * 0.8, sx = 1 }) {
   const g = new THREE.TorusGeometry(r, tube, 6, 16, arc);
   b.add(g, color, { p: [0, y, z], r: [0.15, 0, Math.PI + (Math.PI - arc) / 2], s: [sx, 1, 1] });
+}
+
+/** Línea de boca que envuelve la cara (horizontal), para ranas/gecos. */
+function mouthWrap(b, { rx, rz, y, z = 0, arc = Math.PI * 0.7, tube = 0.024, color = 0x5a1f2b, curl = 0.05 }) {
+  const g = new THREE.TorusGeometry(1, tube / rx, 6, 24, arc);
+  b.add(g, color, { p: [0, y, z], r: [Math.PI / 2, 0, -Math.PI / 2 - arc / 2], s: [rx, rz, rx] });
+  // comisuras hacia arriba
+  for (const sx of [-1, 1]) {
+    const a = -Math.PI / 2 + sx * arc / 2;
+    b.add(new THREE.CapsuleGeometry(tube, curl, 3, 6), color, { p: [Math.cos(a) * rx * 0.98, y + curl * 0.5, z + Math.sin(a) * rz * 0.98], r: [0, 0, sx * 0.5] });
+  }
 }
 
 function blush(b, { spread, y, z, r = 0.07, yaw = 0.5 }) {
@@ -83,7 +98,7 @@ function tailChain(b, pts, r0, r1, colorFn, n = 14) {
     const p = curve.getPoint(t);
     // radio con panza en el medio (colas esponjosas)
     const r = typeof r0 === 'function' ? r0(t) : THREE.MathUtils.lerp(r0, r1, t);
-    b.add(sph(r, 12, 10), colorFn(t, i), { p: p.toArray() });
+    b.add(sph(r, 10, 8), colorFn(t, i), { p: p.toArray() });
   }
 }
 
@@ -137,9 +152,9 @@ export const CHARACTER_DEFS = {
       blush(b, { spread: 0.36, y: -0.06, z: -0.3, r: 0.07 });
     },
     eyes(b) {
-      eyes(b, { spread: 0.25, r: 0.17, out: 0.35, pupil: 0.55 });
+      eyes(b, { spread: 0.25, r: 0.17, out: 0.35, pupil: 0.55, lid: 0x8fd632 });
     },
-    browsFn(b) { brows(b, { spread: 0.25, y: 0.27, z: -0.33, len: 0.14, thick: 0.03, color: shade(0x9be33a, -0.3), tilt: 0.25 }); },
+    browsFn() {},
     torso(b, fur) {
       torso(b, fur, 0xe9f7a8, { handFn: pawFingers(fur, 3, 0xd4f27a, 0.05) });
       for (const [x, y, z] of [[0.2, 0.42, 0.25], [-0.18, 0.3, 0.3], [0.05, 0.5, 0.3]]) b.add(sph(0.05, 8, 6), shade(fur, -0.18), { p: [x, y, z], s: [1, 1, 0.5] });
@@ -159,34 +174,34 @@ export const CHARACTER_DEFS = {
   mora: {
     accent: 0x8e5cc4,
     hub: 0x8e5cc4,
-    eyesPos: [0, 0.04, -0.3],
+    eyesPos: [0, 0.07, -0.3],
     tailPos: [0, 0.1, 0.32],
     head(b, fur) {
       b.add(sph(0.43, 22, 16), fur, { s: [1.05, 0.96, 1.02] });
       // hocico alargado lila
-      b.add(sph(0.22, 16, 12), 0xc9a9ec, { p: [0, -0.13, -0.38], s: [1.05, 0.82, 1.15] });
+      b.add(sph(0.2, 16, 12), 0xc9a9ec, { p: [0, -0.17, -0.36], s: [1.05, 0.8, 1.15] });
       // nariz-estrella rosa
-      b.add(sph(0.1, 14, 10), 0xff7aa8, { p: [0, -0.09, -0.62] });
+      b.add(sph(0.075, 14, 10), 0xff7aa8, { p: [0, -0.15, -0.6] });
       for (let i = 0; i < 9; i++) {
         const a = (i / 9) * Math.PI * 2;
-        b.add(sph(0.04, 8, 6), 0xff9cc0, { p: [Math.cos(a) * 0.115, -0.09 + Math.sin(a) * 0.1, -0.6] });
+        b.add(sph(0.032, 8, 6), 0xff9cc0, { p: [Math.cos(a) * 0.09, -0.15 + Math.sin(a) * 0.08, -0.57] });
       }
       // dientes de conejo
-      for (const sx of [-1, 1]) b.add(rbox(0.06, 0.08, 0.04, 0.015), WHITE, { p: [sx * 0.035, -0.29, -0.5] });
-      smile(b, { r: 0.1, tube: 0.02, y: -0.22, z: -0.5, arc: Math.PI * 0.7 });
+      for (const sx of [-1, 1]) b.add(rbox(0.06, 0.08, 0.04, 0.015), WHITE, { p: [sx * 0.035, -0.33, -0.47] });
+      smile(b, { r: 0.09, tube: 0.02, y: -0.26, z: -0.47, arc: Math.PI * 0.7 });
       blush(b, { spread: 0.3, y: -0.12, z: -0.32, r: 0.065 });
       // casco de minera
-      b.add(new THREE.SphereGeometry(0.47, 22, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0xffc93c, { p: [0, 0.12, 0.02], s: [1.02, 0.85, 1.02], mat: 'gloss' });
-      b.add(new THREE.CylinderGeometry(0.55, 0.56, 0.05, 24), 0xf2b21b, { p: [0, 0.13, 0.0], mat: 'gloss' });
-      b.add(rbox(0.06, 0.08, 0.7, 0.02), 0xf2b21b, { p: [0, 0.52, 0.04], mat: 'gloss' });
+      b.add(new THREE.SphereGeometry(0.47, 22, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0xffc93c, { p: [0, 0.2, 0.02], s: [1.02, 0.85, 1.02], mat: 'gloss' });
+      b.add(new THREE.CylinderGeometry(0.55, 0.56, 0.05, 24), 0xf2b21b, { p: [0, 0.21, 0.0], mat: 'gloss' });
+      b.add(rbox(0.06, 0.08, 0.7, 0.02), 0xf2b21b, { p: [0, 0.6, 0.04], mat: 'gloss' });
       // linterna del casco
-      b.add(new THREE.CylinderGeometry(0.1, 0.12, 0.12, 14), 0x4a4f5e, { p: [0, 0.32, -0.42], r: [Math.PI / 2 - 0.4, 0, 0], mat: 'metal' });
-      b.add(new THREE.CylinderGeometry(0.08, 0.08, 0.02, 14), 0xfff3a6, { p: [0, 0.3, -0.48], r: [Math.PI / 2 - 0.4, 0, 0], mat: 'glow' });
+      b.add(new THREE.CylinderGeometry(0.1, 0.12, 0.12, 14), 0x4a4f5e, { p: [0, 0.4, -0.42], r: [Math.PI / 2 - 0.4, 0, 0], mat: 'metal' });
+      b.add(new THREE.CylinderGeometry(0.08, 0.08, 0.02, 14), 0xfff3a6, { p: [0, 0.38, -0.48], r: [Math.PI / 2 - 0.4, 0, 0], mat: 'glow' });
       // gafas redondas
       for (const sx of [-1, 1]) {
-        b.add(new THREE.TorusGeometry(0.15, 0.022, 8, 22), 0x9c6b1e, { p: [sx * 0.17, 0.04, -0.47], r: [0, sx * 0.25, 0], mat: 'metal' });
+        b.add(new THREE.TorusGeometry(0.15, 0.022, 8, 22), 0x9c6b1e, { p: [sx * 0.17, 0.07, -0.45], r: [0, sx * 0.25, 0], mat: 'metal' });
       }
-      b.add(new THREE.TorusGeometry(0.05, 0.015, 6, 10, Math.PI), 0x9c6b1e, { p: [0, 0.07, -0.5], mat: 'metal' });
+      b.add(new THREE.TorusGeometry(0.05, 0.015, 6, 10, Math.PI), 0x9c6b1e, { p: [0, 0.1, -0.5], mat: 'metal' });
     },
     eyes(b) {
       eyes(b, { spread: 0.17, r: 0.135, out: 0.2 });
@@ -346,7 +361,7 @@ export const CHARACTER_DEFS = {
       // bultos de los ojos encima de la cabeza
       for (const sx of [-1, 1]) b.add(sph(0.18, 16, 12), fur, { p: [sx * 0.24, 0.2, -0.12] });
       // sonrisota
-      smile(b, { r: 0.36, tube: 0.026, y: 0.02, z: -0.38, arc: Math.PI * 0.62 });
+      mouthWrap(b, { rx: 0.545, rz: 0.45, y: -0.04, arc: Math.PI * 0.62, tube: 0.026, curl: 0.07 });
       blush(b, { spread: 0.42, y: -0.04, z: -0.24, r: 0.08, yaw: 0.8 });
       // manchas
       for (const [x, y, z, r] of [[0.3, 0.18, 0.18, 0.06], [-0.28, 0.2, 0.22, 0.05], [0.0, 0.29, 0.1, 0.055], [-0.42, 0.06, 0.05, 0.045]]) {
@@ -408,7 +423,6 @@ export const CHARACTER_DEFS = {
       for (const sx of [-1, 1]) {
         b.add(cone(0.16, 0.26, 6), fur, { p: [sx * 0.27, 0.4, 0.02], r: [0, 0, -sx * 0.45], s: [1, 1, 0.6] });
         b.add(cone(0.1, 0.17, 6), 0x2b2d42, { p: [sx * 0.265, 0.39, -0.03], r: [0, 0, -sx * 0.45], s: [1, 1, 0.4] });
-        b.add(sph(0.05, 8, 6), 0xf8f9fa, { p: [sx * 0.34, 0.52, 0.02] });
       }
     },
     eyes(b) {
