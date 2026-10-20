@@ -1,19 +1,9 @@
-// STUB del orquestador: audio mudo.
-// El Agente de Arte/Audio lo reemplaza con WebAudio sintetizado. Interfaz pública:
+// API pública de audio (WebAudio 100 % sintetizado, sin archivos):
 //   audio.attach(events, save)  escucha EVENTS y lee volúmenes de save.data.settings
-//   audio.unlock()              llamar en el primer gesto del usuario (requisito del navegador)
-//   audio.play(name, opts?)     name ∈ SFX (src/core/contracts.js); opts {volume, pitch}
-//   audio.playMusic(id)         'menu' | 'pico' | 'selva' | 'canon'
+//   audio.unlock()              primer gesto del usuario (attach ya registra pointerdown/keydown)
+//   audio.play(name, opts?)     name ∈ SFX; opts {volume, pitch, ...extras por sonido: level, power, success}
+//   audio.playMusic(id)         'menu' | 'pico' | 'selva' | 'canon' (crossfade)
 //   audio.stopMusic()
-//   audio.setEngine(speedRatio, boosting)  0..1, sonido de motor del jugador (null/-1 = apagar)
+//   audio.setEngine(speedRatio, boosting, drifting?)  0..1; null/-1 apaga con fade
 //   audio.setVolumes({music, sfx})
-
-export const audio = {
-  attach() {},
-  unlock() {},
-  play() {},
-  playMusic() {},
-  stopMusic() {},
-  setEngine() {},
-  setVolumes() {},
-};
+export { audio } from './audio.js';
