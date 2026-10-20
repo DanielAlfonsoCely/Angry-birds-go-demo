@@ -40,8 +40,9 @@ function installProbe() {
           s.wrapped = true;
           const prev = k.onEvent;
           k.onEvent = (type, ev) => {
-            if (type === 'land') { s.land++; if (ev.hard) s.hard++; }
-            else if (type === 'wallHit') s.wall++;
+            if (type === 'land') { s.lastLand = s.time; s.land++; if (ev.hard) s.hard++; }
+            else if (type === 'wallHit') { s.wall++; s.lastWall = s.time; }
+            else if (type === 'spinOut' || type === 'slowDown') s.lastHit = s.time;
             else if (type === 'respawn' && !k.finished && k.t < 0.99) { s.resp++; (s.respAt ??= []).push(+k.t.toFixed(3) + '@' + Math.round(k.speed)); }
             else if (type === 'driftBoost') s.driftBoost++;
             prev?.(type, ev);
@@ -72,6 +73,27 @@ function installProbe() {
         if (k.spinTimer > 0) s.spin += dt;
         if (k.boostTimer > 0) s.boost += dt;
         else if (k.grounded) { s.gdist += k.speed * dt; s.gtime += dt; }
+        if (k.id === 'player') {
+          // caídas de velocidad >20 % en <1 s y su causa
+          const H = (s.hist ??= []);
+          H.push([s.time, k.speed, k.boostTimer > 0, k.drifting, !k.grounded]);
+          while (H[0][0] < s.time - 1) H.shift();
+          let vm = 0, bi = 0;
+          for (const h of H) if (h[1] > vm) { vm = h[1]; bi = h; }
+          if (vm > 10 && k.speed < vm * 0.8 && s.time - (s.lastDrop ?? -9) > 1.5) {
+            s.lastDrop = s.time;
+            const n = k.groundNormal, f = k.forward;
+            const slope = n ? (f.x * n.x + f.z * n.z) / Math.max(0.3, n.y) : 0; // + = subida
+            let cause = 'arrastre/otro';
+            if (s.time - (s.lastLand ?? -9) < 1.2) cause = 'aterrizaje';
+            else if (s.time - (s.lastWall ?? -9) < 1.2) cause = 'pared';
+            else if (s.time - (s.lastHit ?? -9) < 1.5) cause = 'golpe/trampa';
+            else if (k.drifting) cause = 'derrape';
+            else if (bi[2] && k.boostTimer <= 0.3) cause = 'fin de boost';
+            else if (slope > 0.07) cause = 'subida';
+            (s.drops ??= []).push({ t: +s.time.toFixed(1), m: +(k.t).toFixed(3), from: +vm.toFixed(1), to: +k.speed.toFixed(1), cause, slope: +slope.toFixed(2) });
+          }
+        }
         if (k.speed < 5 && s.time > 8 && k.respawnTimer <= 0 && k.spinTimer <= 0 && k.grounded) s.stuck += dt;
       }
     };
@@ -104,7 +126,7 @@ for (const track of (args.tracks ?? 'pico,selva,canon').split(',')) {
       track, kart: s.id === 'player' ? 'JUGADOR' : s.id, dur: +t.toFixed(1), vavg: +(s.dist / Math.max(s.time, 1e-6)).toFixed(1),
       vmax: +s.vmax.toFixed(1), air: +(100 * s.air / Math.max(s.time, 1e-6)).toFixed(1), land: s.land, hard: s.hard,
       wallKm: +(s.wall / Math.max(s.dist / 1000, 1e-6)).toFixed(1), resp: s.resp, stuck: +s.stuck.toFixed(1),
-      boost: +(100 * s.boost / Math.max(s.time, 1e-6)).toFixed(0), vsin: +(s.gdist / Math.max(s.gtime, 1e-6)).toFixed(1), driftS: +s.drift.toFixed(1), dBoost: s.driftBoost, fin: s.fin != null, respAt: s.respAt ?? [],
+      boost: +(100 * s.boost / Math.max(s.time, 1e-6)).toFixed(0), vsin: +(s.gdist / Math.max(s.gtime, 1e-6)).toFixed(1), driftS: +s.drift.toFixed(1), dBoost: s.driftBoost, drops: s.drops ?? [], fin: s.fin != null, respAt: s.respAt ?? [],
     });
   }
   if (!done) console.error(`[${track}] la carrera no terminó en ${timeout / 1000} s`);
@@ -118,6 +140,7 @@ else {
   for (const r of rows) {
     console.log(`${r.track.padEnd(9)} ${r.kart.padEnd(8)} ${String(r.dur).padStart(6)} ${String(r.vavg).padStart(5)} ${String(r.vmax).padStart(5)} ${String(r.air).padStart(5)} ${String(r.land).padStart(5)} ${String(r.hard).padStart(5)} ${String(r.wallKm).padStart(8)} ${String(r.resp).padStart(4)} ${String(r.stuck).padStart(8)} ${String(r.driftS).padStart(10)} ${String(r.dBoost).padStart(8)} ${String(r.boost).padStart(6)} ${String(r.vsin).padStart(9)}`);
   }
+  for (const r of rows) if (r.kart === 'JUGADOR') { const c = {}; for (const d of r.drops) c[d.cause] = (c[d.cause] ?? 0) + 1; console.log(`  caidas>20% ${r.track}: ${r.drops.length} ${JSON.stringify(c)}`); if (args.drops) for (const d of r.drops) console.log('    ', JSON.stringify(d)); }
   for (const r of rows) if (r.respAt.length) console.log(`  respawn ${r.track} ${r.kart}: ${r.respAt.join(' ')}`);
   for (const tr of new Set(rows.map((r) => r.track))) {
     const p = rows.find((r) => r.track === tr && r.kart === 'JUGADOR');

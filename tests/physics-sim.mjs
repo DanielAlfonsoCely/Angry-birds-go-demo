@@ -1,6 +1,6 @@
 // Simulación determinista de las físicas en Node (sin navegador) sobre la pista de pruebas.
 // Uso: node tests/physics-sim.mjs [escenario] [--dt=0.0167] [--log]
-// Escenarios: accel, run, trick, trickfail, gap, drift, wall, cave, collide, crest, all (por defecto)
+// Escenarios: accel, run, trick, trickfail, gap, drift, driftSameSide, wall, cave, collide, crest, all (por defecto)
 import * as THREE from 'three';
 import { createKart, statsWithUpgrades } from '../src/physics/index.js';
 import { createTestTrack } from '../src/physics/testTrack.js';
@@ -155,6 +155,35 @@ const scen = {
     const l1 = k.driftLevel;
     run(k, full, 0.05, () => idle());
     check('drift: nivel 1 tras 0.7 s', l1 === 1 && k.events.filter((e) => e.type === 'driftBoost').at(-1)?.level === 1, `lvl=${l1}`);
+  },
+  driftSameSide() {
+    simTime = 0;
+    // derrape sin contra-giro: solo se mantiene el giro hacia el lado del derrape (curva izquierda)
+    const k = makeKart(full, { atM: 900 });
+    k.launch(1);
+    run(k, full, 1.5, (kk) => ({ ...idle(), steer: autoSteer(kk, full) }));
+    const side = Math.sign(autoSteer(k, full)) || -1;
+    const h0 = k.heading;
+    // solo gira (suave) hacia el lado del derrape; nunca contra-gira
+    const log = run(k, full, 1.45, (kk) => ({ ...idle(), steer: side * 0.3, drift: true }), { every: 0.1 });
+    const dirOk = k.driftDir === Math.sign(side);
+    const lvl = k.driftLevel;
+    const dh = Math.abs(Math.atan2(Math.sin(k.heading - h0), Math.cos(k.heading - h0)));
+    run(k, full, 0.05, () => idle());
+    const db = k.events.find((e) => e.type === 'driftBoost');
+    console.log('  derrape mismo lado:', log.map((r) => `${r.t}s v=${r.v} lat=${r.lat} lvl=${r.drift}`).join(' | '));
+    check('driftSameSide: nivel 2 solo girando hacia el lado del derrape', dirOk && lvl === 2 && db?.level === 2, `lvl=${lvl} dir=${k.driftDir}`);
+    // mantener el giro cierra la curva (aquí incluso pega con la pared interior: es una curva de R=50 y el derrape gira más); basta con que gire y no se frene
+    check('driftSameSide: el kart toma la curva (gira hacia el lado y conserva velocidad)', dh > 0.5 && Math.min(...log.map((r) => r.v)) > 25 && k.events.filter((e) => e.type === 'wallHit').length <= 2, `giro=${dh.toFixed(2)} rad lat=${k.lateral.toFixed(1)}`);
+    // sin giro el derrape se mantiene y también carga
+    const k2 = makeKart(full, { atM: 900 });
+    k2.launch(1);
+    run(k2, full, 1.5, (kk) => ({ ...idle(), steer: autoSteer(kk, full) }));
+    run(k2, full, 0.2, () => ({ ...idle(), steer: side, drift: true }));
+    run(k2, full, 1.0, () => ({ ...idle(), drift: true }));
+    check('driftSameSide: soltar el giro mantiene el derrape y sigue cargando', k2.drifting && k2.driftCharge > 0.9, `charge=${k2.driftCharge.toFixed(2)}`);
+    run(k2, full, 0.6, () => ({ ...idle(), steer: -side, drift: true }));
+    check('driftSameSide: girar al lado contrario no cancela el derrape', k2.drifting, `drifting=${k2.drifting}`);
   },
   wall() {
     simTime = 0;

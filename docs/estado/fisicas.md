@@ -44,3 +44,10 @@ así que parece un efecto de Gameplay/Arte y no la cámara (no verificado con ra
 El cambio de lado es instantáneo (yaw sin interpolar); la altura y el FOV conservan su suavizado.
 
 Pendiente (no mío): en pico, jugador e IA reaparecen en t≈0.75 (también antes de mis cambios, a 0.13): revisar pista/respawn.
+
+## Paso 3b: "el carro desacelera mucho"
+`node tests/physics-telemetry.mjs --drops=1` ahora cuenta, para el jugador, caídas de velocidad >20 % en <1 s y su causa (aterrizaje, pared, golpe/trampa, derrape, fin de boost, subida, otro).
+Resultado con autopiloto (sin mejoras), por carrera: 8-13 caídas. Causas: aterrizaje 2-3 (p. ej. 76→57 m/s, la caída proyectada al plano del suelo), fin de boost 1-3 (decaimiento exponencial del exceso, 47→30), subida 1-5 (casi siempre exceso de boost + pendiente; la pérdida propia de la subida es ~0.3 m/s²), pared 2-4 (autopiloto choca; −10 %), golpe/trampa 1-3 (diseño), derrape 0-2 (−3 % de vmáx, no es significativo). No hay arrastre excesivo en tramos de 4-6°.
+Cambios: `OVERSPEED_RATE` 1.1→0.7 (el exceso tras un boost decae más suave) y `LANDING_KEEP = 0.5` (aterrizaje limpio conserva la mitad de la energía de la caída como avance; el aterrizaje duro sigue perdiendo 15 %).
+Efecto medido: caídas 11/10/13 → 11/8/12 (poco; la mayoría son boosts que terminan, que son inevitables) y duración total de las 3 pistas 184.4 s → 184.9 s (±0.3 %). La telemetría entre corridas varía ±5 s por pista, así que las duraciones por pista no son comparables finamente. `physics-sim` 21/21.
+Conclusión: la sensación viene sobre todo de caer desde velocidades de boost/salto (60-90 m/s) a la base de 29 m/s, más paredes y trampas; sin mejoras la base es 29 m/s (+ bono en bajada). Si aún se siente lento, la palanca es subir `BASE_TOP_SPEED` o mantener el boost más tiempo, no el arrastre.

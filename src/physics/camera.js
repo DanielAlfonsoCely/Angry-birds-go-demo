@@ -24,6 +24,8 @@ export function createChaseCamera(camera) {
   let ready = false;
   let landingN = 0;
   let wallN = 0;
+  let lookBack = false;
+  let flip = false;      // cambio de lado pendiente: se aplica sin interpolar
 
   function slopeLift(kart) {
     // en bajada, el terreno detrás del kart está más alto: subimos la cámara en proporción
@@ -36,8 +38,11 @@ export function createChaseCamera(camera) {
   function place(kart, dt, instant) {
     const top = kart.stats?.topSpeed ?? 32;
     const speed = kart.speed ?? 0;
-    const heading = kart.heading ?? new THREE.Euler().setFromQuaternion(kart.quaternion, 'YXZ').y;
-    yaw = instant ? heading : yaw + wrapAngle(heading - yaw) * (1 - Math.exp(-C.CAM_YAW_RATE * dt));
+    let heading = kart.heading ?? new THREE.Euler().setFromQuaternion(kart.quaternion, 'YXZ').y;
+    if (lookBack) heading += Math.PI;
+    const yawNow = instant || flip; // el cambio de lado es instantáneo; la altura conserva su suavizado
+    flip = false;
+    yaw = yawNow ? heading : yaw + wrapAngle(heading - yaw) * (1 - Math.exp(-C.CAM_YAW_RATE * dt));
     fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw));
 
     const distTarget = C.CAM_DISTANCE + C.CAM_DISTANCE_SPEED * clamp((speed - top * 0.5) / (top * 0.9), 0, 1);
@@ -102,7 +107,8 @@ export function createChaseCamera(camera) {
       place(kart, 0, true);
     },
     /** Llamar cada frame. Sacude sola al aterrizar o chocar con paredes. */
-    follow(kart, dt) {
+    follow(kart, dt, opts) {
+      if (opts && opts.lookBack !== undefined) this.setLookBack(opts.lookBack);
       if (!ready || lastKartPos.distanceTo(kart.position) > C.CAM_SNAP_DISTANCE) {
         this.snap(kart);
         return;
@@ -119,6 +125,12 @@ export function createChaseCamera(camera) {
       trauma = Math.max(0, trauma - C.CAM_SHAKE_DECAY * dt);
       place(kart, dt, false);
     },
+    /** Mirar atrás: cámara delante del kart apuntando hacia atrás. También: follow(kart, dt, { lookBack }). */
+    setLookBack(v) {
+      v = !!v;
+      if (v !== lookBack) { lookBack = v; flip = true; }
+    },
+    get lookBack() { return lookBack; },
     /** Agrega sacudida (0..1, se acumula hasta 1). */
     shake(intensity = 0.3) {
       trauma = Math.min(1, trauma + intensity);

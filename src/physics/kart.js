@@ -284,7 +284,7 @@ export function createKart({ id, characterId, stats, position, quaternion }) {
       grip = C.DRIFT_GRIP;
     } else if (kart.drifting) {
       const d = kart.driftDir;
-      yaw = -d * turn * Math.max(0.15, C.DRIFT_TURN_BASE + C.DRIFT_TURN_STEER * steerS * d);
+      yaw = -d * turn * Math.max(C.DRIFT_TURN_MIN, C.DRIFT_TURN_BASE + C.DRIFT_TURN_STEER * steerS * d);
       follow = C.DRIFT_VEL_FOLLOW;
       grip = C.DRIFT_GRIP * stats.handling;
     } else {
@@ -410,6 +410,10 @@ export function createKart({ id, characterId, stats, position, quaternion }) {
     if (angle > C.LANDING_BAD_ANGLE) {
       v.multiplyScalar(1 - C.LANDING_BAD_LOSS);
       hard = true;
+    } else {
+      // aterrizaje limpio: se conserva parte de la energía de la caída (arcade, evita el "frenazo")
+      const len = v.length();
+      if (len > 1) v.multiplyScalar((len + C.LANDING_KEEP * (total - len)) / len);
     }
     tricksDone = 0;
     emit('land', 'lastLanding', { impact, angle, airTime: air, hard });
@@ -443,7 +447,9 @@ export function createKart({ id, characterId, stats, position, quaternion }) {
       return;
     }
     if (kart.grounded) {
-      kart.driftCharge += dt;
+      // carga siempre; más rápido si se gira hacia el lado del derrape
+      const toward = clamp(steerS * kart.driftDir, -1, 1);
+      kart.driftCharge += dt * (C.DRIFT_CHARGE_BASE + C.DRIFT_CHARGE_STEER * toward);
       kart.driftLevel = kart.driftCharge >= C.DRIFT_LEVEL2_TIME ? 2 : kart.driftCharge >= C.DRIFT_LEVEL1_TIME ? 1 : 0;
     }
   }

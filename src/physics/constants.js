@@ -28,7 +28,7 @@ export const SLOPE_ACCEL_DOWN = 0.35;     // fracción de g·sin usada para acel
 export const SLOPE_ACCEL_UP = 0.35;       // fracción de g·sin que frena cuesta arriba
 
 // --- Velocidad por encima de la máxima ---
-export const OVERSPEED_RATE = 1.1;        // 1/s: decaimiento hacia la máxima tras un boost
+export const OVERSPEED_RATE = 0.7;        // 1/s: decaimiento hacia la máxima tras un boost
 export const OVERSPEED_MIN_DECEL = 1.5;   // m/s²
 
 // --- Giro ---
@@ -43,8 +43,11 @@ export const GRIP_TRANSFER = 0.6;         // fracción de la velocidad lateral a
 export const DRIFT_MIN_SPEED = 10;
 export const DRIFT_CANCEL_SPEED = 7;
 export const DRIFT_STEER_THRESHOLD = 0.3;
-export const DRIFT_TURN_BASE = 0.75;      // ×turnRate en la dirección del derrape sin input
-export const DRIFT_TURN_STEER = 0.6;      // rango extra según el giro (cerrar/abrir)
+export const DRIFT_TURN_BASE = 0.72;      // ×turnRate en la dirección del derrape sin input
+export const DRIFT_TURN_STEER = 0.45;      // rango extra según el giro (cerrar/abrir)
+export const DRIFT_TURN_MIN = 0.27;      // girar al lado contrario abre la curva pero nunca la cancela
+export const DRIFT_CHARGE_BASE = 1.1;    // velocidad de carga del mini-turbo sin giro
+export const DRIFT_CHARGE_STEER = 0.25;   // ± según gire hacia/contra el lado del derrape
 export const DRIFT_GRIP = 3.2;
 export const DRIFT_VEL_FOLLOW = 0.82;     // fracción del giro que sigue la velocidad (resto = deslizamiento)
 export const DRIFT_VISUAL_ANGLE = 0.42;   // ángulo del morro hacia dentro (rad)
@@ -70,6 +73,7 @@ export const AIR_ORIENT_RATE = 2.5;
 export const GROUND_ORIENT_RATE = 14;
 export const LANDING_MIN_AIR = 0.2;       // aire mínimo para contar como aterrizaje (evento/penalización)
 export const LANDING_BAD_ANGLE = 35 * Math.PI / 180;
+export const LANDING_KEEP = 0.5;         // fracción de la velocidad de caída que se conserva como avance al aterrizar bien
 export const LANDING_BAD_LOSS = 0.15;
 export const JUMP_NO_SNAP_TIME = 0.15;    // tras jump()/launch no se pega al suelo durante este tiempo
 
