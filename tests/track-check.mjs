@@ -16,7 +16,7 @@ for (const def of Object.values(TRACK_DEFS)) {
   for (const j of f.jumps) {
     const d = j.design;
     console.log(`  salto hueco ${d.gap} m (rampa ${d.rampAngle}°): desnivel ${d.drop.toFixed(1)} m, aterrizaje ${d.landLength.toFixed(0)} m ` +
-      `de ${d.landSlope.toFixed(0)}° a ${d.landEndSlope.toFixed(0)}°; margen de vMin=${JUMP_PHYS.vMin} sobre el borde ${d.clearAtEdge.toFixed(1)} m; ` +
+      `de ${d.landSlope.toFixed(0)}° a ${d.landEndSlope.toFixed(0)}°; margen de vMin=${d.vMin} sobre el borde ${d.clearAtEdge.toFixed(1)} m; ` +
       `sobran ${d.spareAfterVMax.toFixed(0)} m tras la caída de vMax=${JUMP_PHYS.vMax}`);
     if (!(d.clearAtEdge > 0) || !(d.spareAfterVMax > 10)) { console.log('  !! salto no alcanzable o aterrizaje corto'); fail = true; }
     const row = [];

@@ -38,3 +38,12 @@
 1. Con pendientes de 4-6° el kart tarda más en coger velocidad en los tramos normales: Físicas/Gameplay deben validar el ritmo (60-90 s).
 2. Banderines y géiseres son objetos sueltos (animan con onBeforeRender del arte); son pocos.
 3. Decor depende de `ctx.profiles` y `ctx.waterfalls` creados por terrain.js (orden en `index.js`: terrain antes que decor).
+
+## Fix respawn en pico (t≈0.13 / 0.46 / 0.75)
+- Causa: los saltos de pico estaban diseñados para cruzar desde vMin=22 m/s, pero la rampa sube y el kart despega a 11-20 m/s
+  (fin de boost que decae hacia `top` cuesta arriba, choques de pared/derrape en el pad, trampas). Cae en el hueco (-25 m) y reaparece.
+  Los tramos eran los saltos 2 y 3 (t≈0.415-0.53 y 0.70-0.83); la geometría y `getGroundAt` estaban bien.
+- Corrección: `designJump` acepta `vMin` por salto (`seg.vMin` en la definición; `path.js` lo pasa). Pico usa `vMin: 14` y huecos 14/18/22 m
+  (antes 24/30/36 a vMin 22). Desniveles 14/22/34 m. Se acortaron 3 tramos `open` (150->130, 120->100, 120->100) para quedar en 2484 m.
+  Selva y canon no cambian (0 respawns). `track-check` muestra el vMin real de cada salto.
+- Verificado: `physics-telemetry` 3 corridas, 3 pistas, 0 respawns (jugador e IA); `track-check` y `npm run build` OK.

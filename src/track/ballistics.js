@@ -23,8 +23,9 @@ const STEP = 0.5;
 /**
  * @param {{gap:number, rampAngle?:number}} spec
  */
-export function designJump({ gap, rampAngle = 12 }) {
-  const { gravity: g, vMin, vMax, clearance, landMargin, ease, easeV, easeMax, minLand, maxLand } = JUMP_PHYS;
+export function designJump({ gap, rampAngle = 12, vMin: vMinOpt }) {
+  const { gravity: g, vMax, clearance, landMargin, ease, easeV, easeMax, minLand, maxLand } = JUMP_PHYS;
+  const vMin = vMinOpt ?? JUMP_PHYS.vMin; // por salto: pistas con rampa cuesta arriba llegan más lentas
   const th = rampAngle * DEG;
   const tanT = Math.tan(th);
   const cos2 = Math.cos(th) ** 2;
@@ -79,7 +80,7 @@ export function designJump({ gap, rampAngle = 12 }) {
   return {
     gap, rampAngle, drop, landLength, landPitches: pitches, landStep: STEP,
     landSlope: pitches[0], landEndSlope: lastPitch,
-    y, landing,
+    y, landing, vMin,
     landX: (v) => landing(v).x,
     impactAngle: (v) => landing(v).impact,
     /** y del vuelo a vMin justo en el borde del hueco por encima del borde del aterrizaje (debe ser > 0) */

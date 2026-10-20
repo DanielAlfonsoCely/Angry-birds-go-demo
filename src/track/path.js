@@ -55,7 +55,7 @@ export function buildPath(def) {
       }
     } else {
       // Salto: aproximación recta (con boost pad), rampa hacia arriba, hueco balístico y aterrizaje en bajada.
-      const design = designJump({ gap: seg.gap, rampAngle: seg.rampAngle ?? 12 });
+      const design = designJump({ gap: seg.gap, rampAngle: seg.rampAngle ?? 12, vMin: seg.vMin });
       const approach = seg.approach ?? 36;
       const rampLen = seg.ramp ?? 22;
       const appTarget = (seg.slope ?? 8) * DEG;

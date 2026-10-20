@@ -29,7 +29,7 @@ Ya hecho (Ola 1 / Fase 0): Físicas ✅, Audio ✅, Arte parte 1, Pistas parte 1
 - Arte y Audio: sin tareas (cumplieron); se retoman si la revisión del usuario lo pide.
 - **Al terminar el Paso 2 todo se pausa hasta que el usuario lo pruebe.**
 
-## Paso 3: Correcciones de la prueba del usuario (20-oct, hasta 17:55)
+## Paso 3: ✅ Correcciones de la prueba del usuario (20-oct, terminado 17:15)
 - Físicas: derrape sin contra-giro y cámara trasera.
 - Gameplay: la catapulta fija el valor al soltar, mejoras por personaje, IA adaptativa y mirar atrás.
 - UI: tienda por personaje, botón de mirar atrás y medidor fijado.
