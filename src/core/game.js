@@ -55,7 +55,10 @@ export class Game {
   }
 
   frame() {
-    const dt = Math.min(this.clock.getDelta(), 1 / 20) * this.timeScale;
+    const raw = this.clock.getDelta();
+    this.fps = this.fps ? this.fps * 0.95 + (1 / Math.max(raw, 1e-3)) * 0.05 : 60;
+    window.__fps = Math.round(this.fps);
+    const dt = Math.min(raw, 1 / 20) * this.timeScale;
     this.input.update();
     if (!this.paused) this.time += dt;
     this.mode?.update(this.paused ? 0 : dt, this.time);

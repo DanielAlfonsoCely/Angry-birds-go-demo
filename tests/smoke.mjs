@@ -61,7 +61,7 @@ const state = await page.evaluate(() => {
   return {
     t: +p.t.toFixed(4), speedKmh: Math.round(p.speed * 3.6), grounded: p.grounded,
     pos: [p.position.x, p.position.y, p.position.z].map((v) => +v.toFixed(1)),
-    fps: window.__fps ?? null,
+    fps: window.__fps ?? null, gameTime: +(window.__game?.time ?? 0).toFixed(1),
   };
 });
 console.log('Estado del jugador:', JSON.stringify(state));

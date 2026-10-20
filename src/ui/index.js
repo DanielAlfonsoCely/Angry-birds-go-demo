@@ -20,6 +20,7 @@ export function createUI(game, root) {
   const race = createRace(game, { trackId, characterId });
   game.setMode({
     scene: race.scene,
+    race, // expuesto para pruebas (tests/smoke.mjs)
     update(dt, time) {
       race.update(dt, time);
       hud.textContent = `${status}  ${Math.round(race.player.speed * 3.6)} km/h`;
