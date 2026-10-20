@@ -57,7 +57,8 @@ export function buildTrack(trackId) {
   const startLineIndex = Math.round(START_LINE_S / f.ds);
   const ctx = { theme: meta.theme, def, group, res, ground, light, startLineIndex, frames: f };
 
-  const { groundMeshes } = buildRoad(f, ctx);
+  const { groundMeshes, rampBase } = buildRoad(f, ctx);
+  ctx.rampBase = rampBase;
   ground.build();
   const layout = layoutPickups(f, def);
   const pickups = buildPickups(f, ctx, layout);

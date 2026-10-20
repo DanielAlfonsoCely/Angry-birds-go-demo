@@ -15,17 +15,23 @@ for (const def of Object.values(TRACK_DEFS)) {
   for (const t of SEGMENT_TYPES) if (!types.has(t)) { console.log(`  !! falta tipo ${t}`); fail = true; }
   for (const j of f.jumps) {
     const d = j.design;
-    const ok = d.clearAtEdge > 0;
-    console.log(`  salto hueco ${d.gap} m: desnivel ${d.drop.toFixed(1)} m, aterrizaje ${d.landLength.toFixed(0)} m a ${d.landSlope}°; ` +
-      `vuelo horizontal v22=${d.landX(22).toFixed(0)} v32=${d.landX(32).toFixed(0)} v45=${d.landX(45).toFixed(0)} m ` +
-      `(máx ${(d.gap + (d.landLength - JUMP_PHYS.landMargin) * Math.cos(d.landSlope * Math.PI / 180)).toFixed(0)}); ` +
-      `margen v22 en el borde ${d.clearAtEdge.toFixed(1)} m; impacto v45 ${d.impactAngle(45).toFixed(0)}°, v32 ${d.impactAngle(32).toFixed(0)}°`);
-    if (!ok) fail = true;
+    console.log(`  salto hueco ${d.gap} m (rampa ${d.rampAngle}°): desnivel ${d.drop.toFixed(1)} m, aterrizaje ${d.landLength.toFixed(0)} m ` +
+      `de ${d.landSlope.toFixed(0)}° a ${d.landEndSlope.toFixed(0)}°; margen de vMin=${JUMP_PHYS.vMin} sobre el borde ${d.clearAtEdge.toFixed(1)} m; ` +
+      `sobran ${d.spareAfterVMax.toFixed(0)} m tras la caída de vMax=${JUMP_PHYS.vMax}`);
+    if (!(d.clearAtEdge > 0) || !(d.spareAfterVMax > 10)) { console.log('  !! salto no alcanzable o aterrizaje corto'); fail = true; }
+    const row = [];
+    for (const v of [22, 25, 28, 32, 35, 40, 45]) {
+      const L = d.landing(v);
+      row.push(`v${v}: vuelo ${L.x.toFixed(0)} m, impacto ${L.impact.toFixed(0)}°`);
+      if (v >= 28 && v <= 35 && !(L.impact < 30)) { console.log(`  !! impacto ${L.impact.toFixed(0)}° a ${v} m/s (>30°)`); fail = true; }
+      if (!Number.isFinite(L.x)) { console.log(`  !! a ${v} m/s se pasa del aterrizaje`); fail = true; }
+    }
+    console.log('    ' + row.join(' | '));
   }
-  // Auto-cruce: distancia horizontal mínima entre frames separados > 250 m de recorrido
+  // Auto-cruce: distancia horizontal mínima entre frames separados > 450 m de recorrido
   let minD = Infinity, at = null;
   for (let i = 0; i < f.N; i += 3) {
-    for (let k = i + 250; k < f.N; k += 3) {
+    for (let k = i + Math.round(450 / f.ds); k < f.N; k += 3) {
       const d = Math.hypot(f.px[i] - f.px[k], f.pz[i] - f.pz[k]);
       if (d < minD) { minD = d; at = [i, k]; }
     }

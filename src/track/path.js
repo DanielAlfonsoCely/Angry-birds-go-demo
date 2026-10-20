@@ -55,7 +55,7 @@ export function buildPath(def) {
       }
     } else {
       // Salto: aproximación recta (con boost pad), rampa hacia arriba, hueco balístico y aterrizaje en bajada.
-      const design = designJump({ gap: seg.gap, rampAngle: seg.rampAngle ?? 12, landSlope: seg.landSlope ?? 22 });
+      const design = designJump({ gap: seg.gap, rampAngle: seg.rampAngle ?? 12 });
       const approach = seg.approach ?? 36;
       const rampLen = seg.ramp ?? 22;
       const appTarget = (seg.slope ?? 8) * DEG;
@@ -88,10 +88,12 @@ export function buildPath(def) {
         push();
       }
       const sGapEnd = s;
-      pitch = design.landSlope * DEG;
+      // Aterrizaje: perfil curvo calculado por designJump (un pitch por paso de 0.5 m)
       part = PART.land;
-      const nL = Math.round(design.landLength / STEP);
-      for (let j = 1; j <= nL; j++) advance(STEP);
+      for (const ph of design.landPitches) {
+        pitch = ph * DEG;
+        advance(design.landStep);
+      }
       jumps.push({
         seg: idx, design, sApproach: s0, sRamp, sLip, sGapEnd, sLandEnd: s,
         padS: sRamp - 14, lip, fwd: { x: fx, z: fz },
