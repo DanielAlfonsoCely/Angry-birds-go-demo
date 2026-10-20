@@ -16,12 +16,16 @@ Ya hecho (Ola 1 / Fase 0): Físicas ✅, Audio ✅, Arte parte 1, Pistas parte 1
 | Pistas | Sonnet | Decoración con `createProp`, revisión visual con recorrido de cámara en las 3 pistas |
 | Arte | Sonnet | El arte dentro de la carrera real: rendimiento (menos triángulos), partículas por tema, animación de banderín y géiser |
 
+## Paso 1: ✅ completado (commit a6c70f0)
+
 ## Paso 2: Sensación de juego y pulido
-**Objetivo común**: que se sienta rápido, fluido y divertido a 60 FPS.
-- Físicas (Sonnet): ajuste fino sobre las pistas reales (pendientes, saltos, derrape).
-- Gameplay (Sonnet): balance de la IA y de los objetos, y ritmo de la carrera.
-- Arte + Pistas (Sonnet): pulido visual y presupuesto de rendimiento.
-- Audio (Haiku): mezcla en juego y sonidos de UI conectados.
+**Objetivo común**: que se sienta rápido, fluido, justo y divertido.
+- Pistas (Sonnet): pendientes medias de 8–14° sin romper saltos, puertas de slalom y portal del cañón.
+- Físicas (Sonnet): ajuste fino con telemetría sobre las pistas reales (derrape, aire, aterrizajes, cámara, que el kart nunca se atasque).
+- Gameplay (Sonnet): balance (el jugador sin mejoras queda a mitad de tabla), monedas y catapulta más compacta.
+- UI (Sonnet): HUD verificado con el estado real de gameplay, guía de controles en la primera carrera y pulido.
+- Arte y Audio: sin tareas (cumplieron); se retoman si la revisión del usuario lo pide.
+- **Al terminar el Paso 2 todo se pausa hasta que el usuario lo pruebe.**
 
 ## Paso 3: QA y cierre
 **Objetivo común**: sin bugs conocidos y documentación final.
