@@ -22,10 +22,10 @@ export const NO_GROUND_BELOW_TRACK = 1.5; // en tramos sin suelo se ignoran golp
 export const SLOPE_FLAT_MAX = 0.21;       // sin(~12°): hasta aquí la velocidad máx. es la base
 export const SLOPE_TOP_GAIN = 1.5;        // velocidad máx. extra por unidad de sin(pendiente) por encima de SLOPE_FLAT_MAX
 export const SLOPE_TOP_MAX_BONUS = 0.28;  // tope de la bonificación en bajadas (×1.28)
-export const SLOPE_UP_TOP_LOSS = 1.0;     // en subidas: top ×(1 + sin·este)
-export const SLOPE_UP_TOP_MIN = 0.78;
+export const SLOPE_UP_TOP_LOSS = 0.4;     // en subidas: top ×(1 + sin·este)
+export const SLOPE_UP_TOP_MIN = 0.9;
 export const SLOPE_ACCEL_DOWN = 0.35;     // fracción de g·sin usada para acelerar cuesta abajo (si va bajo la máx.)
-export const SLOPE_ACCEL_UP = 0.55;       // fracción de g·sin que frena cuesta arriba
+export const SLOPE_ACCEL_UP = 0.35;       // fracción de g·sin que frena cuesta arriba
 
 // --- Velocidad por encima de la máxima ---
 export const OVERSPEED_RATE = 1.1;        // 1/s: decaimiento hacia la máxima tras un boost
@@ -37,6 +37,7 @@ export const TURN_FULL_SPEED = 6;         // por debajo de esta velocidad el gir
 export const TURN_SPEED_FALLOFF = 40;     // rate = TURN_RATE / (1 + v / FALLOFF): más estable a alta velocidad
 export const STEER_RESPONSE = 11;         // suavizado del input de giro (1/s)
 export const GRIP = 14;                   // amortiguación de la velocidad lateral (1/s)
+export const GRIP_TRANSFER = 0.6;         // fracción de la velocidad lateral amortiguada que pasa a avance
 
 // --- Derrape y mini-turbo ---
 export const DRIFT_MIN_SPEED = 10;
@@ -86,7 +87,7 @@ export const WALL_HIT_MIN_SPEED = 1.5;    // velocidad hacia la pared para conta
 export const WALL_HIT_COOLDOWN = 0.3;
 export const WALL_BOUNCE = 0.35;          // fracción de la velocidad de impacto devuelta hacia adentro
 export const WALL_BOUNCE_MIN = 1.5;
-export const WALL_DEFLECT = 0.5;          // fracción del ángulo contra la pared que se corrige en el rumbo
+export const WALL_DEFLECT = 0.85;         // al chocar, el rumbo gira esta fracción hacia la nueva dirección de la velocidad
 export const WALL_SCRAPE_FRICTION = 0.04; // pérdida por segundo al rozar
 
 // --- Golpes y efectos ---

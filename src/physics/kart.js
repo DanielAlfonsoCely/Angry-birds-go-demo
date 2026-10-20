@@ -305,8 +305,10 @@ export function createKart({ id, characterId, stats, position, quaternion }) {
     forwardOnPlane(heading, n, _f);
     _r.crossVectors(_f, n);
 
-    // Agarre lateral
+    // Agarre lateral: parte de la velocidad lateral que se pierde pasa a avance (arcade, no frena)
+    const vL0 = Math.abs(vL);
     vL *= Math.exp(-grip * h);
+    if (vF > 0 && !spinning) vF += (vL0 - Math.abs(vL)) * C.GRIP_TRANSFER;
 
     // Velocidad longitudinal
     const slope = -_f.y; // + = bajada
@@ -499,12 +501,18 @@ export function createKart({ id, characterId, stats, position, quaternion }) {
       const pOut = kart.pushVelocity.dot(s.right) * side;
       if (pOut > 0) kart.pushVelocity.addScaledVector(s.right, -side * pOut);
       if (vOut > 0) {
+        // quita la componente hacia la pared pero conserva la rapidez (se desvía a lo largo de la pared)
+        const hs0 = Math.hypot(v.x, v.z);
         v.addScaledVector(s.right, -side * vOut);
+        const hs1 = Math.hypot(v.x, v.z);
+        if (hs1 > 1e-3) { v.x *= hs0 / hs1; v.z *= hs0 / hs1; }
         if (vOut > C.WALL_HIT_MIN_SPEED) {
           kart.pushVelocity.addScaledVector(s.right, -side * Math.max(C.WALL_BOUNCE_MIN, vOut * C.WALL_BOUNCE));
-          // corrige el rumbo hacia la dirección de la pista
-          const diff = wrapAngle(heading - headingFromDir(s.tangent));
-          if (Math.abs(diff) < Math.PI / 2 && diff * side < 0) heading -= diff * C.WALL_DEFLECT;
+          // el rumbo gira hacia la nueva dirección de la velocidad (rebote hacia adentro)
+          if (hs1 > 1) {
+            const diff = wrapAngle(headingFromDir(v) - heading);
+            if (Math.abs(diff) < Math.PI / 2) heading += diff * C.WALL_DEFLECT;
+          }
           if (wallCooldown <= 0) {
             if (!(kart.effects.ram > 0)) {
               const loss = C.WALL_SPEED_LOSS * clamp(vOut / 6, 0.4, 1);

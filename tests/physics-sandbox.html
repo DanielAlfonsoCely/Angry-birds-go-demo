@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sandbox de físicas</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1b2a; }
+    #hud { position: fixed; left: 10px; top: 10px; color: #fff; font: 13px/1.35 monospace; white-space: pre; text-shadow: 0 1px 2px #000; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div id="hud"></div>
+  <!-- ?auto=1 conduce solo (IA simple + truco al despegar + derrape en la curva cerrada); ?start=metros -->
+  <script type="module" src="./physics-sandbox.js"></script>
+</body>
+</html>

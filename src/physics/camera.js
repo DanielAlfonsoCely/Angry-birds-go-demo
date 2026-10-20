@@ -47,6 +47,7 @@ export function createChaseCamera(camera) {
     const yTarget = kart.position.y + C.CAM_HEIGHT + slopeLift(kart);
     const rate = kart.grounded ? C.CAM_HEIGHT_RATE : C.CAM_AIR_HEIGHT_RATE;
     camY = instant ? yTarget : camY + (yTarget - camY) * (1 - Math.exp(-rate * dt));
+    camY = clamp(camY, yTarget - 2.5, yTarget + 4); // no se queda muy atrás en caídas grandes
 
     // Suelo y techo bajo la cámara
     const track = kart.track;
