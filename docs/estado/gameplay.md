@@ -40,3 +40,13 @@ medio, ventana, adelantamientos, victorias y tiempo medio por personaje; sin err
 - Mejoras por personaje: el jugador usa `statsWithUpgrades(game.save.getUpgrades(characterId))`.
 - IA adaptativa: nivel de mejoras de la IA = min(nivel de pista × escala, nivel medio de mejoras del jugador + AI_CATCHUP). Constante `AI_CATCHUP` en `race.js` (`__tune.catchup` para pruebas).
 - Mirar atrás: `controls.lookBack` -> `cam.setLookBack(bool)` si existe (comprobación defensiva con `typeof`; hoy Físicas aún no la define en el momento de escribir esto).
+
+### Balance de la IA adaptativa (canon, autopiloto sin mejoras, n=6)
+AI_CATCHUP 0 -> puesto medio 4.0; 0.7 -> 4.67 (ventana 4.0 s); 1.5 (n=4) -> 5.75 (ventana 6.5 s). Quedó en **0.8**. Alta varianza entre corridas.
+
+### Catapulta elevada con mira
+- Los karts salen de plataformas de madera de 3.5 m (`launch.js`: `H`). Durante la cuenta, `steer` del jugador apunta ±15° (`MAX_YAW`) y una línea punteada (16 esferas instanciadas, arco balístico con g=28, velocidad 14+10·medidor, vy=5) muestra la caída; desaparece al lanzar.
+- Al lanzar: `kart.launch(power)`, la velocidad se rota por el yaw de apuntado y `kart.jump(5, 0)`. La IA apunta con variación `±0.15 rad`. Las plataformas se hunden tras el lanzamiento.
+- Verificado: sin errores de consola, sin respawns en la salida (pico).
+- Limitación: el rumbo (`heading`) interno del kart no se puede fijar desde fuera; solo se rota la velocidad, y al aterrizar el agarre la realinea. Pedir a Físicas `kart.setHeading(rad)` si se quiere mejor.
+- Mirar atrás: `cam.setLookBack` existe y se llama cada frame.

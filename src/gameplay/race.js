@@ -23,6 +23,7 @@ const RUBBER_FAST = 0.06;      // la IA rezagada gana hasta un 6 %
 const RUBBER_DIST = 80;        // m para el efecto completo
 // las mejoras de la IA rinden solo una fracción, para que el jugador sin mejoras no quede siempre último
 const AI_LEVEL_SCALE = { pico: 0.8, selva: 0.55, canon: 0.7 };
+const AI_CATCHUP = 0.8;
 const THEME_DUST = { snow: 0xeaf6ff, jungle: 0xa58f5e, volcano: 0x6a5750 };
 const THEME_NAME = { pico: 'snow', selva: 'jungle', canon: 'volcano' };
 
@@ -49,13 +50,17 @@ export function createRace(game, { trackId, characterId }) {
   const grid = track.spawnGrid(RACERS_PER_RACE);
   const range = AI_UPGRADE_RANGE[trackId] ?? [0, 1];
   const idle = { steer: 0, drift: false, trick: false, useItem: false, usePower: false, launchHold: false, pause: false };
+  // IA adaptativa: nunca supera el nivel medio de mejoras del jugador + AI_CATCHUP
+  const pu = game.save.getUpgrades(characterId);
+  const playerLevel = (pu.engine + pu.accel + pu.handling + pu.boost) / 4;
+  const aiCap = playerLevel + (tune.catchup ?? AI_CATCHUP);
   const racers = [characterId, ...rivals.map((r) => r.id)].map((cid, i) => {
     const spawn = grid[RACERS_PER_RACE - 1 - i]; // el jugador sale atrás
     const level = range[0] + Math.floor(Math.random() * (range[1] - range[0] + 1));
     const kart = createKart({
       id: i === 0 ? 'player' : `ai${i}`,
       characterId: cid,
-      stats: statsWithUpgrades(i === 0 ? game.save.data.upgrades : upgradesAtLevel(level * (tune.aiScale ?? AI_LEVEL_SCALE[trackId] ?? 0.7))),
+      stats: statsWithUpgrades(i === 0 ? game.save.getUpgrades(characterId) : upgradesAtLevel(Math.min(aiCap, level * (tune.aiScale ?? AI_LEVEL_SCALE[trackId] ?? 0.7)))),
       position: spawn.position,
       quaternion: spawn.quaternion,
     });
@@ -67,6 +72,7 @@ export function createRace(game, { trackId, characterId }) {
     const r = makeRacer(kart, i, i === 0);
     r.base.copy(kart.position);
     r.launchAt = Math.random() * 0.25;
+    r.aim = (Math.random() - 0.5) * 0.3;
     r.launchPower = 0.3 + Math.random() * 0.65;
     return r;
   });
@@ -96,6 +102,7 @@ export function createRace(game, { trackId, characterId }) {
   let lastPlayerPos = 0;
   let lastCharge = -1;
   let orbit = 0;
+  let lookBack = false;
   let engineOff = false;
   const api = {
     scene, track, karts, player: player.kart,
@@ -173,13 +180,13 @@ export function createRace(game, { trackId, characterId }) {
       // jugador humano
       if (human) {
         const c = game.input.getControls();
-        pc.steer = c.steer; pc.drift = c.drift; pc.launchHold = c.launchHold;
+        pc.steer = c.steer; pc.drift = c.drift; pc.launchHold = c.launchHold; lookBack = !!c.lookBack;
         pc.trick = first && c.trick; pc.useItem = first && c.useItem; pc.usePower = first && c.usePower;
         player.controls = pc;
       }
     }
     const holdKey = human ? pc.launchHold : false;
-    launch.update(h, holdKey, human);
+    launch.update(h, holdKey, human, human ? pc.steer : 0);
     if (phase === 'countdown' && launch.go) phase = 'racing';
     if (phase !== 'countdown') raceTime += h;
 
@@ -263,6 +270,7 @@ export function createRace(game, { trackId, characterId }) {
       game.camera.position.set(p.x + Math.cos(orbit) * 9, p.y + 3.6, p.z + Math.sin(orbit) * 9);
       game.camera.lookAt(p.x, p.y + 1, p.z);
     } else {
+      if (typeof cam.setLookBack === 'function') cam.setLookBack(lookBack && !player.kart.finished);
       cam.follow(player.kart, dt);
     }
 
@@ -300,6 +308,7 @@ export function createRace(game, { trackId, characterId }) {
     powerReady: player.charge >= 1,
     phase,
     launchMeter: player.launched ? 0 : launch.meter,
+    launchLocked: !player.launched && launch.locked,
     launchHolding: !player.launched && launch.holding,
     launched: player.launched,
     reward: (PLACE_REWARDS[player.position - 1] ?? 0) + player.coins, // provisional
