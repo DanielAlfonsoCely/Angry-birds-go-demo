@@ -17,6 +17,12 @@
 - Puntos de progreso: el del jugador sube sobre la barra y los rivales quedan visibles debajo. Resultados compactos en pantallas bajas
   (`max-height: 680px`). Revisado en móvil 390×844 (HUD, guía, resultados).
 
+## Paso 2b (feedback)
+- Tienda por personaje: selector con retratos (desbloqueados), abre en `selectedCharacter`; usa `save.getUpgrades(id)` / `setUpgrade(id, stat, lvl)`.
+- Selección de personaje: 4 mini barras de mejoras (solo si está desbloqueado).
+- Mirar atrás: botón táctil "👀 atrás" (`setVirtual('lookBack')`), "C Mirar atrás" en la guía y lista de controles en la pausa.
+- Catapulta: si `getPlayerState().launchLocked` es true, la aguja se queda quieta, brillo dorado, candado y texto "¡Fijado!" (defensivo si no existe).
+
 ## Verificación
 - `npm run build` OK; `node tests/ui-flow.mjs` OK; `node tests/ui-hud.mjs [--mobile]` OK (capturas `tests/screenshots/ui-hud-{d,m}-*.png`).
 - `ui-hud.mjs` congela la carrera (`game.paused = true`) al cumplirse cada condición y apaga el render salvo para capturar.

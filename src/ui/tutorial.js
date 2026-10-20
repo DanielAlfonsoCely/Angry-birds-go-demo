@@ -12,8 +12,8 @@ export function createTutorial(game, { touch }) {
   save.data.seenTutorial = true;
   save.persist?.();
   const el = h('div', { class: 'cr-tuto' }, touch
-    ? [item('👆', 'Toca los lados: girar'), item('☝️', 'Desliza arriba: truco'), item('🕹️', 'Mantén DERRAPAR en la catapulta y suelta')]
-    : [item(keys('←', '→'), 'Girar'), item(keys('Espacio'), 'Catapulta y derrape'), item(keys('↑'), 'Truco en el aire'), item(keys('E', 'Q'), 'Objeto y poder')]);
+    ? [item('👆', 'Toca los lados: girar'), item('☝️', 'Desliza arriba: truco'), item('🕹️', 'Mantén DERRAPAR en la catapulta y suelta'), item('👀', 'Mantén "atrás" para mirar atrás')]
+    : [item(keys('←', '→'), 'Girar'), item(keys('Espacio'), 'Catapulta y derrape'), item(keys('↑'), 'Truco en el aire'), item(keys('E', 'Q'), 'Objeto y poder'), item(keys('C'), 'Mirar atrás')]);
   let timer = 0, gone = false;
   const hide = () => {
     if (gone) return;

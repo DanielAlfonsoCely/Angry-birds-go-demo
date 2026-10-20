@@ -5,6 +5,7 @@ import { topbar, playError, shake } from './common.js';
 import { characterInfo } from './meta.js';
 import { CHARACTERS } from '../core/data.js';
 import { getPortrait } from './portraits.js';
+import { UPGRADES, MAX_UPGRADE_LEVEL } from '../core/data.js';
 import { audio } from '../audio/index.js';
 
 export function characterScreen(ctx) {
@@ -33,6 +34,11 @@ export function characterScreen(ctx) {
       h('div', { class: 'cr-power' },
         h('div', { class: 'cr-power__icon' }, info.powerIcon),
         h('div', {}, h('div', { class: 'cr-power__label' }, 'Poder'), h('div', { class: 'cr-power__name' }, info.powerName), h('div', { class: 'cr-power__desc' }, info.powerDesc))),
+      owned ? h('div', { class: 'cr-mini-up' }, Object.keys(UPGRADES).map((k) => {
+        const lv = save.getUpgrades(c.id)[k];
+        return h('div', { class: 'cr-mini-up__row', title: `${UPGRADES[k].name} ${lv}/${MAX_UPGRADE_LEVEL}` },
+          h('span', {}, UPGRADES[k].name), h('div', { class: 'cr-mini-up__bar' }, h('i', { style: { width: `${lv / MAX_UPGRADE_LEVEL * 100}%` } })));
+      })) : null,
       owned ? null : h('div', { class: 'cr-char-lock' }, h('span', { html: ICONS.lock }), 'Bloqueado'));
     card.style.setProperty('--kart', info.kart);
     card.querySelector('.cr-char-animal').style.setProperty('--fur', info.fur);

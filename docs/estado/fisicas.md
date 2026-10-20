@@ -30,3 +30,17 @@ así que parece un efecto de Gameplay/Arte y no la cámara (no verificado con ra
 - Pico: IA lentas (~70 s) vs canon ~57 s; equilibrar con Gameplay.
 - El autopiloto casi no derrapa (1–2 s por carrera): el derrape se validó solo con `physics-sim` (mini-turbo nivel 2 a 1.5 s, vel. mantenida en curva). Gameplay podría hacer que la IA derrape en curvas cerradas.
 - Aterrizajes duros: ~0 con el autopiloto; las velocidades de 80+ m/s son de caídas de saltos, no de la base.
+
+## Paso 3: derrape y cámara hacia atrás
+**Derrape.** La lógica ya mapeaba bien el signo (giro hacia el lado del derrape cierra); el problema era de sensación: sin contra-giro el derrape giraba poco (0.75) y la carga no dependía bien del giro. Ahora:
+- Al pulsar derrape con `steer` ≠ 0 (umbral 0.3) queda fijo `driftDir`. Giro por frame = `turn * max(DRIFT_TURN_MIN, DRIFT_TURN_BASE + DRIFT_TURN_STEER * steer * dir)`: mismo lado cierra (hasta 1.17), sin giro mantiene 0.72, lado contrario abre (mín. 0.27) pero nunca cancela.
+- El mini-turbo carga siempre: `dt * (DRIFT_CHARGE_BASE 1.1 + DRIFT_CHARGE_STEER 0.25 * steer*dir)` (0.85x contra, 1.35x a favor). Nivel 1 / 2 a 0.7 / 1.5 de carga. Termina solo al soltar Espacio (ahí se aplica el boost).
+- Constantes nuevas en `constants.js`: `DRIFT_TURN_MIN`, `DRIFT_CHARGE_BASE`, `DRIFT_CHARGE_STEER`; cambiadas `DRIFT_TURN_BASE` 0.75→0.72, `DRIFT_TURN_STEER` 0.6→0.45.
+- Test nuevo `driftSameSide` en `physics-sim.mjs` (21/21 OK): solo giro suave hacia el lado, nivel 2, soltar giro mantiene y carga, giro contrario no cancela. Nota: en la curva de prueba (R=50) mantener el giro la cierra de más y roza la pared interior; los jugadores lo modulan.
+
+**Cámara hacia atrás** (`src/physics/camera.js`), dos formas equivalentes:
+- `cam.setLookBack(bool)` (idempotente; llamarlo cada frame con `controls.lookBack` está bien) y getter `cam.lookBack`.
+- `cam.follow(kart, dt, { lookBack })` (3.er parámetro opcional).
+El cambio de lado es instantáneo (yaw sin interpolar); la altura y el FOV conservan su suavizado.
+
+Pendiente (no mío): en pico, jugador e IA reaparecen en t≈0.75 (también antes de mis cambios, a 0.13): revisar pista/respawn.

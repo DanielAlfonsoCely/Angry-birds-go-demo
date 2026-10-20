@@ -29,7 +29,13 @@ Ya hecho (Ola 1 / Fase 0): Físicas ✅, Audio ✅, Arte parte 1, Pistas parte 1
 - Arte y Audio: sin tareas (cumplieron); se retoman si la revisión del usuario lo pide.
 - **Al terminar el Paso 2 todo se pausa hasta que el usuario lo pruebe.**
 
-## Paso 3: QA y cierre
+## Paso 3: Correcciones de la prueba del usuario (20-oct, hasta 17:55)
+- Físicas: derrape sin contra-giro y cámara trasera.
+- Gameplay: la catapulta fija el valor al soltar, mejoras por personaje, IA adaptativa y mirar atrás.
+- UI: tienda por personaje, botón de mirar atrás y medidor fijado.
+- Orquestador: input `lookBack`, mejoras por personaje en el guardado (con migración), diseño actualizado y `docs/IDEAS.md`.
+
+## Paso 4: QA y cierre
 **Objetivo común**: sin bugs conocidos y documentación final.
 - QA (Haiku/Sonnet): jugar las 3 pistas con los 6 personajes de forma automática y reportar bugs.
 - Correcciones puntuales por módulo (Sonnet).

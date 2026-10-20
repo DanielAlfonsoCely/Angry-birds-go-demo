@@ -25,7 +25,7 @@ Carreras punto a punto (de la cima a la meta, sin vueltas): rápidas, arcade, co
 
 ### Mecánicas de conducción
 - **Giro**: `steer` de -1 a 1. Es más cerrado a baja velocidad y más estable a alta.
-- **Derrape** (mantener Espacio mientras se gira): el kart desliza en ángulo y carga un mini-turbo. Con 0.7 s de carga sale **azul** (boost de 0.6 s) y con 1.5 s sale **naranja** (boost de 1.1 s). Se suelta para activarlo.
+- **Derrape** (Espacio mientras se gira): la dirección del derrape queda fijada; mantener el giro hacia ese lado cierra la curva, soltarlo mantiene un derrape medio y el contrario lo abre. Siempre carga mini-turbo. Con 0.7 s de carga sale **azul** (boost de 0.6 s) y con 1.5 s sale **naranja** (boost de 1.1 s). Se suelta para activarlo.
 - **Aire**: si no hay suelo debajo, el kart está en el aire. Ahí el giro rota el kart lentamente y la gravedad actúa.
 - **Truco aéreo** (↑ / W en el aire, con al menos 0.35 s de aire restante): el kart da una vuelta en barrel roll. Si aterriza completando el truco, recibe un boost de 0.7 s. Si aterriza a mitad del truco, pierde 25 % de velocidad.
 - **Aterrizaje**: si cae alineado con el suelo, conserva la velocidad. Si cae muy inclinado (más de 35°), pierde un 15 %.
@@ -35,11 +35,10 @@ Carreras punto a punto (de la cima a la meta, sin vueltas): rápidas, arcade, co
 ## 2. Inicio: catapulta de lanzamiento
 Durante la cuenta regresiva (3-2-1), los karts están amarrados a una catapulta de resorte.
 - El jugador **mantiene Espacio** para tensar. Un medidor sube y baja continuamente (ciclo de 1.2 s).
-- Al llegar a "¡YA!", el kart sale con la potencia del medidor en el momento de soltar. Puede soltar en cualquier momento hasta 0.6 s después del "¡YA!".
+- **Al soltar, el valor queda fijado** y se aplica en el "¡YA!" (se puede volver a tensar antes para reintentar). Si sigue manteniendo en el "¡YA!", hay 0.6 s para soltar.
   - Zona verde (0.80–0.95): **"¡Perfecto!"**, boost de 1.6 s.
   - 0.50–0.80: **"¡Bien!"**, boost de 0.8 s.
   - Debajo de 0.5 o sin tensar: salida normal.
-  - Soltar antes del "¡YA!": salida normal.
 - La IA logra resultados variados al azar.
 
 ## 3. Personajes (originales)
@@ -92,12 +91,12 @@ Desbloqueo: Pico Escarcha está abierta. Selva Eco se abre al quedar top 3 en Pi
 
 ## 6. Progresión y economía
 - Recompensa por posición: 1º 150, 2º 100, 3º 70, 4º 40, 5º y 6º 20 monedas, más las monedas recogidas en la carrera.
-- **Mejoras del kart** (compartidas por todos los personajes), 5 niveles cada una. Costos: 100, 200, 400, 700 y 1100.
+- **Mejoras del kart** (propias de cada personaje), 5 niveles cada una. Costos: 100, 200, 400, 700 y 1100.
   - `engine` (Motor): +4 % de velocidad máxima por nivel.
   - `accel` (Aceleración): +7 % por nivel.
   - `handling` (Manejo): +6 % de giro y agarre en derrape por nivel.
   - `boost` (Turbo): +6 % de potencia y duración de los boosts por nivel.
-- La IA de los rivales escala con la pista: Pico usa nivel de mejoras 0–1, Selva 1–3 y Cañón 3–5.
+- La IA escala con la pista (Pico < Selva < Cañón) y se adapta al nivel de mejoras del personaje del jugador.
 - Guardado en `localStorage`.
 
 ## 7. Controles
@@ -108,6 +107,7 @@ Desbloqueo: Pico Escarcha está abierta. Selva Eco se abre al quedar top 3 en Pi
 | Truco aéreo | ↑ / W | Deslizar hacia arriba |
 | Usar objeto | E / X | Botón de objeto |
 | Poder de personaje | Q / Z | Botón de poder |
+| Mirar atrás | C / B (mantener) | Botón "atrás" |
 | Pausa | Esc / P | Botón de pausa |
 
 ## 8. Pantallas

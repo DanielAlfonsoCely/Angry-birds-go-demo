@@ -6,7 +6,7 @@ const KEY = 'cumbre-rush-save-v1';
 function defaults() {
   return {
     coins: 0,
-    upgrades: { engine: 0, accel: 0, handling: 0, boost: 0 },
+    upgradesByChar: {},     // { characterId: {engine, accel, handling, boost} }
     unlockedCharacters: ['tuko', 'mora', 'chispa'],
     unlockedTracks: ['pico'],
     bestTimes: {},          // { trackId: seconds }
@@ -23,6 +23,17 @@ export class SaveData {
       const raw = localStorage.getItem(KEY);
       if (raw) this.data = { ...defaults(), ...JSON.parse(raw) };
     } catch { /* sin storage: se juega sin guardar */ }
+    // Migración v1: las mejoras eran globales; se copian a cada personaje desbloqueado
+    if (this.data.upgrades) {
+      for (const id of this.data.unlockedCharacters) this.data.upgradesByChar[id] ??= { ...this.data.upgrades };
+      delete this.data.upgrades;
+      this.persist();
+    }
+  }
+
+  /** Mejoras de un personaje: {engine, accel, handling, boost} */
+  getUpgrades(characterId) {
+    return { engine: 0, accel: 0, handling: 0, boost: 0, ...this.data.upgradesByChar[characterId] };
   }
 
   persist() {
@@ -38,8 +49,10 @@ export class SaveData {
     return true;
   }
 
-  setUpgrade(stat, level) {
-    this.data.upgrades[stat] = Math.min(MAX_UPGRADE_LEVEL, level);
+  setUpgrade(characterId, stat, level) {
+    const u = this.getUpgrades(characterId);
+    u[stat] = Math.min(MAX_UPGRADE_LEVEL, level);
+    this.data.upgradesByChar[characterId] = u;
     this.persist();
   }
 

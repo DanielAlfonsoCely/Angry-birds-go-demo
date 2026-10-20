@@ -75,8 +75,10 @@ export function createHud(game, race, { characterId, touch }) {
   const center = h('div', { class: 'cr-center' });
   const needle = h('div', { class: 'cr-launch__needle' });
   const meterLbl = h('div', { class: 'cr-launch__lbl cr-outline' }, touch ? 'Mantén DERRAPAR y suelta' : 'Mantén ESPACIO y suelta en la zona verde');
+  let lastLocked = false;
+  const meterTxt = touch ? 'Mantén DERRAPAR y suelta' : 'Mantén ESPACIO y suelta en la zona verde';
   const launch = h('div', { class: 'cr-launch', style: { display: 'none', animation: 'none' } },
-    h('div', { class: 'cr-launch__bar' }, needle, h('div', { class: 'cr-launch__zone' }, 'PERFECTO')), meterLbl);
+    h('div', { class: 'cr-launch__bar' }, needle, h('div', { class: 'cr-launch__lock' }, '🔒'), h('div', { class: 'cr-launch__zone' }, 'PERFECTO')), meterLbl);
   const popups = h('div', { class: 'cr-popups' });
   const coinPop = h('div', { class: 'cr-coin-pop', style: { display: 'none' } }, '+1');
 
@@ -195,8 +197,10 @@ export function createHud(game, race, { characterId, touch }) {
     const showMeter = !s.launched && s.phase === 'countdown' && !race.autopilot;
     launch.style.display = showMeter ? '' : 'none';
     if (showMeter) {
-      needle.style.left = `${Math.min(1, Math.max(0, lm ?? 0)) * 100}%`;
+      if (!s.launchLocked) needle.style.left = `${Math.min(1, Math.max(0, lm ?? 0)) * 100}%`;
       launch.classList.toggle('holding', !!s.launchHolding);
+      const locked = !!s.launchLocked; // defensivo: puede no existir
+      if (locked !== lastLocked) { lastLocked = locked; launch.classList.toggle('locked', locked); meterLbl.textContent = locked ? '¡Fijado!' : meterTxt; }
     }
   }
 

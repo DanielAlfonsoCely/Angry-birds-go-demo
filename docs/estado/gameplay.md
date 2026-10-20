@@ -34,3 +34,9 @@ medio, ventana, adelantamientos, victorias y tiempo medio por personaje; sin err
 
 ## Pendiente
 - Revisar visualmente la catapulta (`--shots`). Tecla de pausa: la UI emite PAUSE y llama `race.pause()`.
+
+## Paso 3 (feedback de jugador)
+- Catapulta: el medidor oscila mientras se mantiene; al soltar queda fijado (`launchLocked:true`, `launchMeter` = valor fijado) y se aplica en el ¡YA!. Se puede re-tensar antes del ¡YA! (reinicia la oscilación). Si se mantiene en el ¡YA!, se usa el valor del instante de soltar (ventana 0.6 s). LAUNCH_METER ahora incluye `locked`.
+- Mejoras por personaje: el jugador usa `statsWithUpgrades(game.save.getUpgrades(characterId))`.
+- IA adaptativa: nivel de mejoras de la IA = min(nivel de pista × escala, nivel medio de mejoras del jugador + AI_CATCHUP). Constante `AI_CATCHUP` en `race.js` (`__tune.catchup` para pruebas).
+- Mirar atrás: `controls.lookBack` -> `cam.setLookBack(bool)` si existe (comprobación defensiva con `typeof`; hoy Físicas aún no la define en el momento de escribir esto).

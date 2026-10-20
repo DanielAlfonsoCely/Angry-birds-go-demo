@@ -536,6 +536,24 @@ const CSS = /* css */`
 @media (prefers-reduced-motion: reduce) {
   .cr-logo__ch { animation: none; }
 }
+
+.cr-shop-pick { position: absolute; left: 50%; top: calc(96px + var(--cr-safe-t)); transform: translateX(-50%); display: flex; gap: 12px; z-index: 2; pointer-events: auto; }
+.cr-shop-char { display: flex; align-items: center; gap: 8px; padding: 4px 14px 4px 4px; border-radius: 99px; border: 3px solid #fff; background: rgba(255,255,255,.85); font: inherit; font-weight: 800; font-size: 17px; color: var(--cr-ink); cursor: pointer; box-shadow: 0 4px 0 rgba(10,16,40,.3); }
+.cr-shop-char.is-active { border-color: var(--cr-yellow); background: #fff; transform: scale(1.08); box-shadow: 0 4px 0 rgba(10,16,40,.3), 0 0 0 3px rgba(255,210,63,.5); }
+.cr-shop-char__img { width: 42px; height: 42px; border-radius: 50%; background: #ccd6ee center/cover no-repeat; }
+.cr-shop { top: 58%; }
+.cr-mini-up { display: grid; gap: 4px; margin: 8px 0 2px; }
+.cr-mini-up__row { display: grid; grid-template-columns: 78px 1fr; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; color: var(--cr-ink-2); }
+.cr-mini-up__bar { height: 10px; border-radius: 5px; background: #dfe6f5; overflow: hidden; }
+.cr-mini-up__bar i { display: block; height: 100%; background: var(--cr-yellow); border-radius: 5px; }
+.cr-tbtn--back { right: 140px; bottom: calc(40px + var(--cr-safe-b)); width: 72px; height: 72px; background: rgba(14,20,52,.62); font-size: 15px; }
+.cr-pause__keys { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 360px; }
+.cr-pause__keys span { font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 8px; background: rgba(20,28,70,.1); color: var(--cr-ink-2); }
+.cr-launch__lock { display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 18px; }
+.cr-launch.locked .cr-launch__bar { box-shadow: 0 5px 0 rgba(0,0,0,.3), 0 0 26px rgba(255,210,63,.95); }
+.cr-launch.locked .cr-launch__lock { display: block; }
+.cr-launch.locked .cr-launch__lbl { color: #ffd23f; }
+@media (max-width: 900px), (max-height: 520px) { .cr-shop-pick { top: calc(76px + var(--cr-safe-t)); gap: 6px; } .cr-shop-char span:last-child { display: none; } .cr-shop-char { padding-right: 4px; } .cr-shop { top: calc(130px + var(--cr-safe-t)); } .cr-mini-up__row { grid-template-columns: 64px 1fr; font-size: 11px; } }
 `;
 
 let injected = false;

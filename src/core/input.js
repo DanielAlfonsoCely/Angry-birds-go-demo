@@ -9,6 +9,7 @@ const KEYMAP = {
   KeyE: 'item', KeyX: 'item',
   KeyQ: 'power', KeyZ: 'power',
   Escape: 'pause', KeyP: 'pause',
+  KeyC: 'lookBack', KeyB: 'lookBack',
 };
 
 const EDGE_ACTIONS = ['trick', 'item', 'power', 'pause'];
@@ -61,6 +62,7 @@ export class Input {
       steer,
       drift,
       launchHold: drift,
+      lookBack: this.isHeld('lookBack'),
       trick: !!this.edges.trick,
       useItem: !!this.edges.item,
       usePower: !!this.edges.power,

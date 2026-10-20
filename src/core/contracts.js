@@ -13,6 +13,7 @@
  * @property {boolean} usePower    edge
  * @property {boolean} launchHold  mantenido: tensar catapulta (mismo botón que drift)
  * @property {boolean} pause       edge
+ * @property {boolean} lookBack    mantenido: cámara mirando hacia atrás (C / B)
  */
 
 /**

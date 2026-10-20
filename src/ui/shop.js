@@ -3,8 +3,9 @@ import { h, button, fmtNum } from './dom.js';
 import { ICONS } from './icons.js';
 import { topbar, playError } from './common.js';
 import { UPGRADE_INFO } from './meta.js';
-import { UPGRADES, UPGRADE_COSTS, MAX_UPGRADE_LEVEL } from '../core/data.js';
+import { CHARACTERS, UPGRADES, UPGRADE_COSTS, MAX_UPGRADE_LEVEL } from '../core/data.js';
 import { audio } from '../audio/index.js';
+import { getPortrait } from './portraits.js';
 
 export function shopScreen(ctx, params = {}) {
   const { game, router } = ctx;
@@ -13,12 +14,21 @@ export function shopScreen(ctx, params = {}) {
   const bar = topbar(game, 'Tienda de mejoras', back);
   const grid = h('div', { class: 'cr-shop' });
   const cards = {};
+  const owned = () => CHARACTERS.filter((c) => save.data.unlockedCharacters.includes(c.id));
+  let charId = owned().some((c) => c.id === save.data.selectedCharacter) ? save.data.selectedCharacter : owned()[0].id;
+  const picker = h('div', { class: 'cr-shop-pick' });
+  function renderPicker() {
+    picker.replaceChildren(...owned().map((c) => h('button', {
+      class: `cr-shop-char${c.id === charId ? ' is-active' : ''}`, type: 'button', title: c.name,
+      onClick: () => { if (c.id === charId) return; audio.play('uiClick'); charId = c.id; renderPicker(); for (const k of Object.keys(cards)) fill(k); },
+    }, h('span', { class: 'cr-shop-char__img', style: { backgroundImage: `url(${getPortrait(game, c.id)})` } }), h('span', {}, c.name))));
+  }
 
   function fill(key, fresh = false) {
     const card = cards[key];
     const u = UPGRADES[key];
     const info = UPGRADE_INFO[key];
-    const lvl = save.data.upgrades[key] ?? 0;
+    const lvl = save.getUpgrades(charId)[key];
     const maxed = lvl >= MAX_UPGRADE_LEVEL;
     const cost = UPGRADE_COSTS[lvl];
     const buyBtn = maxed
@@ -45,11 +55,11 @@ export function shopScreen(ctx, params = {}) {
   }
 
   function buy(key) {
-    const lvl = save.data.upgrades[key] ?? 0;
+    const lvl = save.getUpgrades(charId)[key];
     const cost = UPGRADE_COSTS[lvl];
     if (lvl >= MAX_UPGRADE_LEVEL) return;
     if (!save.spend(cost)) { playError(); anim(key, 'shake'); return; }
-    save.setUpgrade(key, lvl + 1);
+    save.setUpgrade(charId, key, lvl + 1);
     audio.play('purchase');
     bar.coins.set(save.data.coins, 'spend');
     fill(key, true);
@@ -65,6 +75,7 @@ export function shopScreen(ctx, params = {}) {
     fill(key);
     grid.appendChild(cards[key]);
   });
-  const el = h('div', { class: 'cr-screen cr-enter' }, bar.el, grid);
+  renderPicker();
+  const el = h('div', { class: 'cr-screen cr-enter' }, bar.el, picker, grid);
   return { el, view: 'title', dim: true, onBack: back };
 }

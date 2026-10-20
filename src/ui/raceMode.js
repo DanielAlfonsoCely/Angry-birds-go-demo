@@ -31,6 +31,7 @@ export function createRaceMode(ctx, trackId, characterId, { autopilot = false } 
         h('div', { class: 'cr-panel' },
           h('h2', { class: 'cr-title' }, 'Pausa'),
           h('div', { class: 'cr-pause__info' }, `${trackName(trackId)}  ·  ${getCharacter(characterId).name}  ·  ${formatTime(race.getPlayerState?.()?.time ?? race.raceTime ?? 0)}`),
+          h('div', { class: 'cr-pause__keys' }, ['←→ Girar', 'Espacio Catapulta/derrape', '↑ Truco', 'E Objeto', 'Q Poder', 'C Mirar atrás', 'Esc Pausa'].map((x) => h('span', {}, x))),
           button('Reanudar', () => setPaused(false), { variant: 'green', icon: ICONS.play }),
           button('Reiniciar', () => ctx.startRace(trackId, characterId), { variant: 'secondary', icon: ICONS.retry }),
           button('Salir', () => ctx.exitRace('tracks'), { variant: 'danger', icon: ICONS.home, sound: 'uiBack' })));

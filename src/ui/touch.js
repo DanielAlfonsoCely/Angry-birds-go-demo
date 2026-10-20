@@ -56,12 +56,13 @@ export function createTouchControls(game, { info }) {
   const itemBtn = holdButton('cr-tbtn--item', 'item', itemIco, { tap: true });
   itemBtn.style.opacity = '.45';
   const powerBtn = holdButton('cr-tbtn--power', 'power', [h('span', {}, info.powerIcon), h('div', { class: 'cr-tbtn__meter' }, meterFill)], { tap: true });
+  const back = holdButton('cr-tbtn--back', 'lookBack', '👀 atrás');
   const drift = holdButton('cr-tbtn--drift', 'drift', 'DERRAPAR');
   const el = h('div', { class: 'cr-touch' },
-    steerZone('l'), steerZone('r'), itemBtn, powerBtn, drift,
+    steerZone('l'), steerZone('r'), itemBtn, powerBtn, back, drift,
     h('div', { class: 'cr-swipe-hint' }, 'Desliza arriba para truco'));
 
-  cleanup.push(() => { for (const a of ['left', 'right', 'drift', 'item', 'power', 'trick']) input.setVirtual(a, false); });
+  cleanup.push(() => { for (const a of ['left', 'right', 'drift', 'item', 'power', 'trick', 'lookBack']) input.setVirtual(a, false); });
   return {
     el,
     setItem(it) { itemIco.textContent = it ? it.icon : ''; itemBtn.style.opacity = it ? '1' : '.45'; },
