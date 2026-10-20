@@ -170,6 +170,39 @@ export function rampTexture(colors) {
   return toTexture(c);
 }
 
+/** Roca roja con vetas de lava: {map: color, emissive: vetas brillantes sobre negro}. Ambas comparten las mismas grietas. */
+export function lavaRockTextures(seed = 11) {
+  const S = 256;
+  const cm = canvas(S), ce = canvas(S);
+  const a = cm.getContext('2d'), e = ce.getContext('2d');
+  noiseFill(a, S, 0x5a1f16, 0xa8442a, 6, seed, 5);
+  e.fillStyle = '#000';
+  e.fillRect(0, 0, S, S);
+  const rng = createRng(seed + 1);
+  for (let v = 0; v < 9; v++) {
+    let x = rng.range(0, S), y = rng.range(0, S), ang = rng.range(0, Math.PI * 2);
+    const pts = [[x, y]];
+    for (let k = 0; k < 14; k++) {
+      ang += rng.range(-0.8, 0.8);
+      x += Math.cos(ang) * rng.range(8, 18);
+      y += Math.sin(ang) * rng.range(8, 18);
+      pts.push([x, y]);
+    }
+    for (const [ctx2, col, w] of [[a, '#1a0806', 6], [e, '#ff4a0c', 5], [e, '#ffc23a', 2], [a, '#ff7a1a', 2]]) {
+      ctx2.strokeStyle = col;
+      ctx2.lineWidth = w;
+      ctx2.lineCap = 'round';
+      ctx2.globalAlpha = 1;
+      wrapDraw(S, 0, 0, (ox, oy) => {
+        ctx2.beginPath();
+        pts.forEach(([px, py], n) => (n ? ctx2.lineTo(px + ox, py + oy) : ctx2.moveTo(px + ox, py + oy)));
+        ctx2.stroke();
+      });
+    }
+  }
+  return { map: toTexture(cm), emissive: toTexture(ce) };
+}
+
 /** Detalle de terreno en gris claro (el color sale de los vertex colors). */
 export function detailTexture(seed = 3, kind = 'rock') {
   const S = 256;

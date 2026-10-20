@@ -18,7 +18,11 @@ import { sortRacers, estimateTimes } from './standings.js';
 const STEP = 1 / 30;           // sub-paso máximo de simulación
 const FINISH_T = 0.9999;
 const GRACE = 5;               // s tras la meta del jugador antes de cerrar la carrera
-const RUBBER = 0.07;           // ±7 % de velocidad/aceleración de la IA
+const RUBBER_SLOW = 0.08;      // la IA que va delante del jugador pierde hasta un 8 % de velocidad
+const RUBBER_FAST = 0.06;      // la IA rezagada gana hasta un 6 %
+const RUBBER_DIST = 80;        // m para el efecto completo
+// las mejoras de la IA rinden solo una fracción, para que el jugador sin mejoras no quede siempre último
+const AI_LEVEL_SCALE = { pico: 0.8, selva: 0.55, canon: 0.7 };
 const THEME_DUST = { snow: 0xeaf6ff, jungle: 0xa58f5e, volcano: 0x6a5750 };
 const THEME_NAME = { pico: 'snow', selva: 'jungle', canon: 'volcano' };
 
@@ -27,6 +31,7 @@ const THEME_NAME = { pico: 'snow', selva: 'jungle', canon: 'volcano' };
  * @param {{trackId:string, characterId:string}} opts
  */
 export function createRace(game, { trackId, characterId }) {
+  const tune = globalThis.__tune ?? {}; // solo para pruebas de balance: {rubber, aiScale}
   const scene = new THREE.Scene();
   const env = createEnvironment(THEME_NAME[trackId] ?? 'snow');
   env.apply(scene);
@@ -50,7 +55,7 @@ export function createRace(game, { trackId, characterId }) {
     const kart = createKart({
       id: i === 0 ? 'player' : `ai${i}`,
       characterId: cid,
-      stats: statsWithUpgrades(i === 0 ? game.save.data.upgrades : upgradesAtLevel(level)),
+      stats: statsWithUpgrades(i === 0 ? game.save.data.upgrades : upgradesAtLevel(level * (tune.aiScale ?? AI_LEVEL_SCALE[trackId] ?? 0.7))),
       position: spawn.position,
       quaternion: spawn.quaternion,
     });
@@ -187,7 +192,8 @@ export function createRace(game, { trackId, characterId }) {
     for (const r of racers) {
       if (r === player) continue;
       const d = (r.kart.t - player.kart.t) * L; // + = va por delante del jugador
-      const target = player.kart.finished ? 0 : clampN(-d / 150, -1, 1) * RUBBER;
+      const rb = d > 0 ? -Math.min(1, d / RUBBER_DIST) * RUBBER_SLOW : Math.min(1, -d / RUBBER_DIST) * RUBBER_FAST;
+      const target = player.kart.finished ? 0 : rb * (tune.rubber ?? 1);
       r.rubber += (target - r.rubber) * Math.min(1, h * 0.8);
       r.kart.stats.topSpeed = r.baseTop * (1 + r.rubber);
       r.kart.stats.accel = r.baseAccel * (1 + r.rubber);
@@ -294,6 +300,9 @@ export function createRace(game, { trackId, characterId }) {
     powerReady: player.charge >= 1,
     phase,
     launchMeter: player.launched ? 0 : launch.meter,
+    launchHolding: !player.launched && launch.holding,
+    launched: player.launched,
+    reward: (PLACE_REWARDS[player.position - 1] ?? 0) + player.coins, // provisional
     speedKmh: Math.round(player.kart.speed * 3.6),
     progress: player.kart.t,
   });

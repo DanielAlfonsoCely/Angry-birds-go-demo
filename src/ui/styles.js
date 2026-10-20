@@ -226,8 +226,8 @@ const CSS = /* css */`
 .cr-progress__fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(90deg, #4cc9f0, #b8ff5a); border-radius: 99px; }
 .cr-progress__flag { position: absolute; right: 0; top: 0; width: 28px; height: 32px; color: #fff; filter: drop-shadow(0 2px 0 rgba(0,0,0,.4)); }
 .cr-progress__flag svg { width: 100%; height: 100%; }
-.cr-progress__dot { position: absolute; top: 10px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 0 rgba(0,0,0,.35); will-change: transform; }
-.cr-progress__dot.is-player { top: 3px; width: 30px; height: 30px; margin-left: -15px; border: 3px solid #fff; z-index: 3; background-size: cover; background-position: center; box-shadow: 0 0 0 3px var(--cr-yellow), 0 3px 0 rgba(0,0,0,.35); }
+.cr-progress__dot { position: absolute; top: 13px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 0 rgba(0,0,0,.35); will-change: transform; }
+.cr-progress__dot.is-player { top: -9px; width: 30px; height: 30px; margin-left: -15px; border: 3px solid #fff; z-index: 3; background-size: cover; background-position: center; box-shadow: 0 0 0 3px var(--cr-yellow), 0 3px 0 rgba(0,0,0,.35); }
 .cr-speedo { position: absolute; right: 22px; bottom: calc(18px + var(--cr-safe-b)); width: 190px; height: 130px; }
 .cr-speedo svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .cr-speedo__v { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; font-weight: 800; font-size: 54px; line-height: 1; font-variant-numeric: tabular-nums; }
@@ -486,6 +486,52 @@ const CSS = /* css */`
   .cr-podium__col.p2 .cr-podium__block { height: 52px; }
   .cr-podium__col.p3 .cr-podium__block { height: 38px; }
   .cr-results__head { font-size: 44px; }
+}
+
+/* pantallas cortas en horizontal (laptops pequeñas): resultados compactos */
+@media (min-width: 761px) and (max-height: 680px) {
+  .cr-results { gap: 18px; padding: 12px; }
+  .cr-results__head { font-size: 52px; }
+  .cr-results__sub { font-size: 17px; margin-top: -4px; }
+  .cr-podium__col { width: 96px; }
+  .cr-podium__face { width: 62px; height: 62px; }
+  .cr-podium__name { font-size: 16px; }
+  .cr-podium__col.p1 .cr-podium__block { height: 86px; }
+  .cr-podium__col.p2 .cr-podium__block { height: 62px; }
+  .cr-podium__col.p3 .cr-podium__block { height: 46px; }
+  .cr-results__right { gap: 8px; }
+  .cr-table { border-spacing: 0 3px; }
+  .cr-table td { padding: 1px 8px; font-size: 16px; }
+  .cr-table td:first-child { font-size: 18px; }
+  .cr-table img { width: 26px; height: 26px; }
+  .cr-reward { padding: 8px 14px; }
+  .cr-reward__total { font-size: 32px; }
+  .cr-results__btns { gap: 8px; }
+  .cr-results__btns .cr-btn { font-size: 16px; }
+}
+
+
+/* pantalla de carga */
+.cr-loading { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: radial-gradient(circle at 50% 40%, #27406b, #0d1b2a 70%); color: #fff; animation: cr-fade-in .2s ease-out both; }
+.cr-loading__t { font-size: 34px; font-weight: 800; letter-spacing: 1px; }
+.cr-loading__s { font-size: 16px; font-weight: 700; opacity: .75; }
+.cr-loading__bar { width: min(280px, 60vw); height: 14px; border-radius: 99px; background: rgba(255,255,255,.18); border: 2px solid rgba(255,255,255,.7); overflow: hidden; }
+.cr-loading__bar i { display: block; height: 100%; width: 40%; border-radius: 99px; background: linear-gradient(90deg, #4cc9f0, #b8ff5a); animation: cr-load 1s ease-in-out infinite alternate; }
+@keyframes cr-load { from { transform: translateX(-20%); } to { transform: translateX(160%); } }
+
+/* guía de controles de la primera carrera */
+.cr-tuto { position: absolute; left: 0; right: 0; margin: 0 auto; width: max-content; top: calc(78px + var(--cr-safe-t)); display: flex; gap: 8px 18px; flex-wrap: wrap; justify-content: center; max-width: min(540px, 92vw); padding: 12px 16px; border-radius: 22px; background: rgba(14,20,52,.72); border: 2px solid rgba(255,255,255,.75); box-shadow: 0 8px 0 rgba(0,0,0,.25); color: #fff; pointer-events: none; z-index: 5; animation: cr-pop-in .45s cubic-bezier(.2,1.4,.4,1) both; transition: opacity .5s, transform .5s; }
+.cr-tuto.out { opacity: 0; transform: translateY(14px); }
+.cr-tuto__it { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 17px; }
+.cr-tuto__it .cr-key { position: static; }
+.cr-tuto__keys { display: inline-flex; gap: 3px; }
+.cr-tuto .cr-key { min-width: 30px; height: 30px; padding: 0 6px; display: inline-grid; place-items: center; border-radius: 8px; background: #fff; color: var(--cr-ink); font-weight: 800; font-size: 15px; box-shadow: 0 3px 0 rgba(0,0,0,.35); }
+@media (max-width: 760px), (max-aspect-ratio: 4/5) {
+  .cr-tuto { top: calc(190px + var(--cr-safe-t)); flex-direction: column; gap: 6px; align-items: flex-start; }
+  .cr-tuto__it { font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cr-loading__bar i { animation: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .cr-logo__ch { animation: none; }

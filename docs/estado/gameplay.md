@@ -1,27 +1,36 @@
-# Estado: Gameplay (src/gameplay) — Paso 1 terminado
+# Estado: Gameplay (src/gameplay) — Paso 2 terminado
 
-## Hecho
+## Hecho (Paso 1)
 - `createRace(game,{trackId,characterId})` → `{scene, track, karts, player, update, dispose, getStandings(), getPlayerState(), phase, pause(bool), raceTime, autopilot}`.
-  `?autopilot=1` o `race.autopilot=true` hace que la IA maneje al jugador.
-- Archivos: `race.js` (orquesta, subpasos de 1/30 s, meta, RACE_END, audio.setEngine), `launch.js` (catapulta, 3-2-1-0, medidor,
-  ventana 0.6 s, rating perfect/good/normal; catapulta aplastada en Y para no tapar al kart), `items.js` (monedas, cajas, cohete,
-  bola de nieve, miel, imán), `powers.js` (6 poderes + carga), `ai.js` (lookahead, línea interior, cajas/pads, miel, derrape,
-  trucos, objetos/poderes, atasco), `standings.js`, `fx.js` (halo imán, aura embestida, burbuja), `state.js`, `models.js`.
-- Eventos: COUNTDOWN, LAUNCH(_METER), COIN, ITEM_PICKUP/USE, POWER_CHARGE/USE, HIT (wall solo del jugador; sismo, bola, embestida),
-  DRIFT_BOOST, TRICK, LAND (impact normalizado 0..1), POSITION, FINISH, RACE_END (reward = premio por puesto + monedas).
-  Los roces kart-kart no emiten HIT. No toco `game.save` ni la tecla de pausa; `pause(true)` apaga el motor.
-- Rubber-band de la IA ±7 % (topSpeed/accel) según distancia al jugador; mejoras de la IA por `AI_UPGRADE_RANGE`.
-- `createParticles(scene, track.theme)` (nota del orquestador).
+  `?autopilot=1` hace que la IA maneje al jugador. Archivos: `race.js`, `launch.js`, `items.js`, `powers.js`, `ai.js`, `standings.js`, `fx.js`, `state.js`, `models.js`.
+- Eventos: COUNTDOWN, LAUNCH(_METER), COIN, ITEM_*, POWER_*, HIT, DRIFT_BOOST, TRICK, LAND, POSITION, FINISH, RACE_END (reward = premio por puesto + monedas).
 
-## Verificaciones
-- `npm run build` OK.
-- `node tests/gameplay-race.mjs --track=pico|canon [--verbose] [--shots]` (autopiloto, timeScale 3, sin render salvo `--shots`,
-  vite sin HMR): pico y canon terminan con RACE_END de 6 resultados, tiempos crecientes, la IA usa 4 objetos y 6 poderes, sin errores
-  de consola. pico: 63 s de juego, ganó ai2; canon: 51 s.
-- Captura `tests/screenshots/gp-catapult-2.png`: kart visible con la catapulta tensada.
+## Paso 2: balance
+Causa real del dominio de Nilo/Chispa: (1) el poder Superbrinco (salto 22 m/s) de la IA era un atajo gratis (~6 s por carrera);
+(2) poderes de contacto (turbo corto, embestida, sismo) rendían menos que los de ventaja gratis; (3) las mejoras de la IA (nivel 1-5)
+pesaban demasiado frente al jugador en 0; (4) rubber-band de ±7 % demasiado suave. La burbuja x1.15 no era el problema.
+Cambios: brinco 9/6 y la IA solo lo usa si hay rival delante (<70 m); turbo 1.9 s; embestida y sismo dan un pequeño impulso (sismo radio 22);
+mejoras de la IA escaladas (pico 0.8, selva 0.55, canon 0.7); rubber-band asimétrico (-8 % al que va delante, +6 % al rezagado, 80 m);
+la IA y el autopiloto derrapan en curvas más suaves (21 mini-turbos por carrera, antes 1-2 s de derrape).
 
-## Pendientes / propuestas (Paso 2)
-- Balance: el autopiloto del jugador (mejoras 0) queda último; la IA de Chispa gana por ~8 s en pico. Subir el efecto del rubber-band
-  o limitar el nivel de mejoras de la IA.
-- Tecla de pausa: la UI debe emitir `EVENTS.PAUSE` y llamar `race.pause()`; gameplay no emite PAUSE.
-- Revisar el test de humo con la UI nueva: `?track=..` ya no entra directo en `tests/smoke.mjs` (muestra el menú) — es de UI.
+Autopiloto del jugador sin mejoras (Tuko), `--runs=6`, mismas condiciones de pistas del 20/10:
+| Pista | Puesto medio antes -> después | Ventana de llegada | Adelantamientos | Monedas medias |
+|---|---|---|---|---|
+| pico | 4.6 (n=5) -> 3.2 | ~12 s -> 6.6 s | ~10 -> 19.7 | 20 -> 30 |
+| selva | 5.2 -> 4.0 | 8.5 -> 5.7 s | 14 -> 18 | 10 -> 13 |
+| canon | 5.8 -> 5.3 (brecha 4.6 s con el 1.º) | 11.8 -> 7.7 s | 9 -> 19.5 | 44 -> 26 |
+Ojo: Pistas y Físicas cambiaron tiempos de vuelta durante el paso (carreras de ~57-66 s); la varianza entre corridas es alta (n=6).
+
+## Otros cambios
+- Monedas: radio de recogida 2.2 -> 3.0 m; la IA/autopiloto apuntan a la fila de monedas más cercana (sin caja que buscar), `coinLove` por IA.
+- Catapulta más baja y compacta (sin losa grande bajo la cámara); se hunde y desaparece 0.5-1.2 s tras el lanzamiento.
+- `getPlayerState()`: position,total,time,coins,item,powerCharge,powerReady,phase('countdown'|'racing'|'finished'),launchMeter (número),
+  launchHolding,launched,speedKmh,progress y reward provisional. RACE_END.reward = premio + monedas (verificado).
+- Humo y onda de sismo ya no se emiten cerca de la cámara (neblina rosada en canon).
+
+## Verificación
+`npm run build` OK. `node tests/gameplay-race.mjs --track=pico|selva|canon --runs=N [--tune={"rubber":0,"aiScale":0}]` imprime puesto
+medio, ventana, adelantamientos, victorias y tiempo medio por personaje; sin errores de consola. Captura de la catapulta nueva sin revisar.
+
+## Pendiente
+- Revisar visualmente la catapulta (`--shots`). Tecla de pausa: la UI emite PAUSE y llama `race.pause()`.

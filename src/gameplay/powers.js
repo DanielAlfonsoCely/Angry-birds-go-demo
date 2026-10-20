@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { EVENTS } from '../core/contracts.js';
 import { CHARACTERS, POWER_CHARGE_TIME } from '../core/data.js';
 
-const SISMO_R = 18, SMOKE_R = 6, SMOKE_LIFE = 4;
+const SISMO_R = 22, SMOKE_R = 6, SMOKE_LIFE = 4;
 const _p = new THREE.Vector3();
 
 export function createPowers(ctx) {
@@ -28,9 +28,9 @@ export function createPowers(ctx) {
     r.charge = 0;
     game.events.emit(EVENTS.POWER_USE, { kartId: r.id, powerId: id });
     if (id === 'turbo') {
-      k.applyBoost(1.2, 1.5);
+      k.applyBoost(1.9, 1.5);
     } else if (id === 'sismo') {
-      particles.emit('shockwave', k.position, { scale: 1 });
+      if (r.isPlayer || k.position.distanceToSquared(game.camera.position) > 12 * 12) particles.emit('shockwave', k.position, { scale: 1 });
       for (const o of racers) {
         if (o === r || o.kart.finished) continue;
         const dx = o.kart.position.x - k.position.x, dz = o.kart.position.z - k.position.z;
@@ -39,13 +39,15 @@ export function createPowers(ctx) {
         if (o.isPlayer) ctx.cam.shake(0.5);
       }
       if (r.isPlayer) ctx.cam.shake(0.4);
+      k.applyBoost(1.0, 0.9);
     } else if (id === 'burbuja') {
       k.effects.shield = 5;
       k.applyBoost(5, 0.375);
     } else if (id === 'embestida') {
       k.effects.ram = 4;
+      k.applyBoost(1.4, 0.9);
     } else if (id === 'brinco') {
-      k.jump(22.4, 8);
+      k.jump(9, 6);
     } else if (id === 'humo') {
       const t = Math.max(0, k.t - 4 / L());
       const s = track.sample(t);
@@ -63,7 +65,8 @@ export function createPowers(ctx) {
       if (s.life <= 0) { smokes.splice(i, 1); continue; }
       if ((s.puff -= h) <= 0) {
         s.puff = 0.9;
-        particles.emit('smoke', s.pos, { scale: 1.2 });
+        // sin humo cerca de la cámara: taparía el kart del jugador
+        if (s.pos.distanceToSquared(game.camera.position) > 14 * 14) particles.emit('smoke', s.pos, { scale: 0.8 });
       }
       for (const o of racers) {
         const k = o.kart;

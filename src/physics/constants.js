@@ -2,8 +2,8 @@
 // Unidades: metros, segundos, radianes. Ver docs/DISENO.md §1.
 
 // --- Estadísticas base (calibradas: 0 → 32 m/s en ~3.5 s en plano) ---
-export const BASE_TOP_SPEED = 32;
-export const BASE_ACCEL = 13.3;           // aceleración pico (a velocidad 0)
+export const BASE_TOP_SPEED = 29;
+export const BASE_ACCEL = 12.1;           // aceleración pico (a velocidad 0)
 export const ACCEL_FALLOFF = 0.55;        // a(v) = accel·(1 − FALLOFF·v/top): empuje fuerte al inicio
 
 // --- Integración ---
@@ -19,9 +19,9 @@ export const MIN_GROUND_NORMAL_Y = 0.45;  // superficies más empinadas (~63°) 
 export const NO_GROUND_BELOW_TRACK = 1.5; // en tramos sin suelo se ignoran golpes más abajo que esto respecto a la pista
 
 // --- Pendiente ---
-export const SLOPE_FLAT_MAX = 0.21;       // sin(~12°): hasta aquí la velocidad máx. es la base
+export const SLOPE_FLAT_MAX = 0.07;       // sin(~4°): hasta aquí la velocidad máx. es la base
 export const SLOPE_TOP_GAIN = 1.5;        // velocidad máx. extra por unidad de sin(pendiente) por encima de SLOPE_FLAT_MAX
-export const SLOPE_TOP_MAX_BONUS = 0.28;  // tope de la bonificación en bajadas (×1.28)
+export const SLOPE_TOP_MAX_BONUS = 0.22;  // tope de la bonificación en bajadas (×1.22)
 export const SLOPE_UP_TOP_LOSS = 0.4;     // en subidas: top ×(1 + sin·este)
 export const SLOPE_UP_TOP_MIN = 0.9;
 export const SLOPE_ACCEL_DOWN = 0.35;     // fracción de g·sin usada para acelerar cuesta abajo (si va bajo la máx.)

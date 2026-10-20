@@ -67,11 +67,11 @@ const scen = {
     k.velocity.set(0, 0, 0);
     let t32 = null, t30 = null;
     run(k, flat, 6, (kk, t) => {
-      if (t30 == null && kk.speed >= 30) t30 = t;
-      if (t32 == null && kk.speed >= 31.9) t32 = t;
+      if (t30 == null && kk.speed >= kk.stats.topSpeed * 0.94) t30 = t;
+      if (t32 == null && kk.speed >= kk.stats.topSpeed * 0.997) t32 = t;
       return { ...idle(), steer: autoSteer(kk, flat) };
     });
-    check('accel: 0→32 m/s en plano ~3.5 s', t32 != null && Math.abs(t32 - 3.5) < 0.35, `t30=${t30?.toFixed(2)} t32=${t32?.toFixed(2)} vfinal=${k.speed.toFixed(2)}`);
+    check('accel: 0→vmáx base (29 m/s) en plano ~3.5 s', t32 != null && Math.abs(t32 - 3.5) < 0.35, `t30=${t30?.toFixed(2)} t32=${t32?.toFixed(2)} vfinal=${k.speed.toFixed(2)}`);
   },
   run() {
     simTime = 0;

@@ -64,6 +64,7 @@ export function createAI(ctx) {
     let off = clamp(curv * 2.2, -1, 1) * hw * 0.5 + Math.sin(raceTime * 0.6 + ai.seed) * hw * 0.15 + ai.lane * hw * 0.12;
 
     // cajas (si no tiene objeto) y pads cercanos
+    let boxPicked = false;
     if (!r.item) {
       let best = 1e9, bl = 0;
       for (let i = 0; i < boxes.length; i++) {
@@ -73,8 +74,24 @@ export function createAI(ctx) {
         const sc = d * 0.15 + Math.abs(items.boxLat[i] - k.lateral);
         if (sc < best) { best = sc; bl = items.boxLat[i]; }
       }
-      if (best < 1e9) off = bl;
-    } else if (ai.padLove > 0.4) {
+      if (best < 1e9) { off = bl; boxPicked = true; }
+    }
+    // monedas: la fila más cercana por delante, si no hay caja que buscar
+    if (!boxPicked && ai.coinLove > 0.25) {
+      const co = items.coinOrder;
+      let bs = 1e9, bl = 0;
+      for (let q = items.coinFrom(k.t + 5 / L); q < co.length; q++) {
+        const i = co[q];
+        const d = (items.coinT[i] - k.t) * L;
+        if (d > 48) break;
+        if (!items.coins[i].collected && items.coinGround[i]) {
+          const sc = d * 0.12 + Math.abs(items.coinLat[i] - k.lateral);
+          if (sc < bs) { bs = sc; bl = items.coinLat[i]; }
+        }
+      }
+      if (bs < 1e9) off = bl;
+    }
+    if (r.item && ai.padLove > 0.4) {
       let bd = 1e9;
       for (let i = 0; i < items.padT.length; i++) {
         const d = (items.padT[i] - k.t) * L;
@@ -98,8 +115,8 @@ export function createAI(ctx) {
 
     // derrape
     const ac = Math.abs(curv);
-    if (k.drifting) ai.driftHold = ac > 0.15;
-    else ai.driftHold = ac > 0.35 && v > 20 && k.grounded && Math.abs(steer) > 0.4;
+    if (k.drifting) ai.driftHold = ac > 0.08 || Math.abs(steer) > 0.35;
+    else ai.driftHold = ac > 0.18 && v > 14 && k.grounded && Math.abs(steer) > 0.32;
     out.drift = ai.driftHold;
 
     // trucos
@@ -139,7 +156,7 @@ export function createAI(ctx) {
           case 'sismo': out.usePower = ahead < 14 || behind < 14 || forced; break;
           case 'embestida': out.usePower = ahead < 10 || behind < 10 || forced; break;
           case 'humo': out.usePower = behind < 14 || forced; break;
-          case 'brinco': out.usePower = k.grounded && ac < 0.15 && k.t < 0.88 && sNear.ceilingHeight == null && sNear.hasGround; break;
+          case 'brinco': out.usePower = (ahead < 70 || ai.powerAge > 9) && k.grounded && ac < 0.15 && k.t < 0.88 && sNear.ceilingHeight == null && sNear.hasGround; break;
           case 'turbo': out.usePower = k.grounded && ac < 0.25; break;
           default: out.usePower = true; // burbuja
         }

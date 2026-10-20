@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { EVENTS } from '../core/contracts.js';
 import { POWER_CHARGE_PER_COIN } from '../core/data.js';
 
-const COIN_R = 2.2, MAGNET_R = 12, COIN_RESPAWN = 6;
+const COIN_R = 3.0, MAGNET_R = 12, COIN_RESPAWN = 6;
 const BOX_R = 2.2, BOX_RESPAWN = 3;
 const MAGNET_TIME = 6;
 const HONEY_R = 2.3, HONEY_LIFE = 22, HONEY_GRACE = 1.5, HONEY_MAX = 12;
@@ -37,6 +37,22 @@ export function createItems(ctx) {
   const coinT = new Float32Array(coins.length);
   const coinTimer = new Float32Array(coins.length);
   coins.forEach((c, i) => { coinT[i] = track.closestT(c.position); });
+  // lateral de las monedas de suelo, ordenadas por t (la IA apunta a las filas); las de aire quedan fuera
+  const coinLat = new Float32Array(coins.length);
+  const coinGround = new Uint8Array(coins.length);
+  coins.forEach((c, i) => {
+    track.sample(coinT[i], _s);
+    const dx = c.position.x - _s.position.x, dy = c.position.y - _s.position.y, dz = c.position.z - _s.position.z;
+    coinLat[i] = dx * _s.right.x + dy * _s.right.y + dz * _s.right.z;
+    coinGround[i] = dy < 2.2 && dy > -1 ? 1 : 0;
+  });
+  const coinOrder = Array.from(coins.keys()).sort((a, b) => coinT[a] - coinT[b]);
+  /** Primer índice de coinOrder con t >= t0. */
+  function coinFrom(t0) {
+    let lo = 0, hi = coinOrder.length;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (coinT[coinOrder[m]] < t0) lo = m + 1; else hi = m; }
+    return lo;
+  }
   // t y lateral de cajas y pads (la IA los usa para buscarlos)
   const boxT = new Float32Array(boxes.length);
   const boxLat = new Float32Array(boxes.length);
@@ -56,7 +72,7 @@ export function createItems(ctx) {
 
   const balls = [];   // bolas de nieve en vuelo
   const traps = [];   // charcos de miel {group,t,lat,owner,grace,life}
-  const self = { traps, boxT, boxLat, padT, padLat, coinCount: coins.length };
+  const self = { coins, traps, boxT, boxLat, padT, padLat, coinT, coinLat, coinGround, coinOrder, coinFrom, coinCount: coins.length };
 
   function addCharge(r, v) {
     r.charge = Math.min(1, r.charge + v);

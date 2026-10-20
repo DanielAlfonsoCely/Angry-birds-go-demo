@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { createProp, getPropGeometries, getPropVariantCount, getMat } from '../art/index.js';
 import { PART } from './path.js';
 import { createRng } from './rng.js';
+import { THEMES } from './themes.js';
 import { placeOnFrame, isLedgeWallSide } from './road.js';
 
 const K = 7;              // puntos por lado del perfil (ver terrain.js)
@@ -12,6 +13,7 @@ const T = { open: 0, narrow: 1, cave: 2, jump: 3, boost: 4, slalom: 5 };
 // Variantes usadas por tipo (menos variantes = menos draw calls)
 const VARIANT_CAP = { tree: 2, rock: 2, bigRock: 1, bush: 1, crystal: 1, flower: 1, mushroom: 1, cactus: 1 };
 const NO_JITTER = new Set(['glow', 'ice', 'jet', 'cloth']);
+const GATE_COLORS = { snow: ['#2a6fdb', '#ff7a3a'], jungle: ['#d8452a', '#ffe14a'], volcano: ['#ff7a1a', '#ffe27a'] };
 const MAX_LIGHTS = 4;     // PointLights reales por pista (las demás luces de cueva van horneadas)
 
 // Radio de ocupación aproximado (m) por tipo, para que no se solapen
@@ -276,6 +278,42 @@ export function buildDecor(f, ctx) {
   };
 
   buildInstanced();
+
+  // Puertas de slalom: postes con bandera en las orillas de los tramos slalom, alternando los colores del bordillo
+  {
+    const pal = THEMES[theme];
+    const gates = [];
+    for (const sg of f.segments) {
+      if (sg.type !== 'slalom') continue;
+      for (let i = sg.i0 + 14; i < sg.i1 - 8; i += 16) gates.push(i);
+    }
+    if (gates.length) {
+      const poleGeo = new THREE.CylinderGeometry(0.1, 0.13, 4.2, 6).translate(0, 2.1, 0);
+      const flagGeo = new THREE.BoxGeometry(1.7, 0.95, 0.07).translate(-0.85, 3.6, 0);
+      const poleMat = ctx.res.mat(new THREE.MeshStandardMaterial({ color: pal.railTop, roughness: 0.6, emissive: pal.railTop, emissiveIntensity: theme === 'volcano' ? 0.5 : 0.1 }));
+      const flagMat = ctx.res.mat(new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7, side: THREE.DoubleSide }));
+      const poles = new THREE.InstancedMesh(ctx.res.geo(poleGeo), poleMat, gates.length * 2);
+      const flags = new THREE.InstancedMesh(ctx.res.geo(flagGeo), flagMat, gates.length * 2);
+      const m = new THREE.Matrix4(), q = new THREE.Quaternion(), pos = new THREE.Vector3(), sc = new THREE.Vector3(1, 1, 1), up = new THREE.Vector3(0, 1, 0);
+      const col = new THREE.Color();
+      let n = 0;
+      gates.forEach((i, g) => {
+        for (const side of [-1, 1]) {
+          const P = side < 0 ? prof.L : prof.R;
+          const lat = f.hw[i] + 2.0;
+          pos.set(f.px[i] + f.rx[i] * side * lat, f.py[i] + profileHeight(P, i, lat) - 0.1, f.pz[i] + f.rz[i] * side * lat);
+          // la bandera sale hacia la pista pero queda fuera de la zona jugable
+          q.setFromAxisAngle(up, Math.atan2(-f.rz[i], f.rx[i]) + (side < 0 ? Math.PI : 0));
+          m.compose(pos, q, sc);
+          poles.setMatrixAt(n, m); flags.setMatrixAt(n, m);
+          col.set(GATE_COLORS[theme][(g + (side < 0 ? 0 : 1)) % 2]);
+          flags.setColorAt(n, col);
+          n++;
+        }
+      });
+      for (const im of [poles, flags]) { im.computeBoundingSphere(); im.name = 'decor-slalom-gate'; group.add(im); instMeshes.push(im); }
+    }
+  }
 
   // Arcos de salida y meta
   for (const i of [ctx.startLineIndex, f.finishIndex]) {

@@ -55,11 +55,11 @@ export function createModels() {
   };
 
   const geo = {
-    base: G(new THREE.BoxGeometry(2.6, 0.18, 3.2)),
-    rail: G(new THREE.BoxGeometry(0.18, 0.35, 3.0)),
-    wall: G(new THREE.BoxGeometry(2.2, 1.1, 0.3)),
-    stripe: G(new THREE.BoxGeometry(2.24, 0.16, 0.32)),
-    plate: G(new THREE.BoxGeometry(1.7, 0.75, 0.16)),
+    base: G(new THREE.BoxGeometry(1.9, 0.08, 2.4)),
+    rail: G(new THREE.BoxGeometry(0.1, 0.18, 2.4)),
+    wall: G(new THREE.BoxGeometry(1.9, 0.8, 0.25)),
+    stripe: G(new THREE.BoxGeometry(1.94, 0.12, 0.27)),
+    plate: G(new THREE.BoxGeometry(1.5, 0.55, 0.14)),
     spring: G(new THREE.TubeGeometry(new HelixCurve(7, 0.3), 140, 0.05, 6, false)),
     rod: G(new THREE.CylinderGeometry(0.06, 0.06, 1, 8).rotateX(Math.PI / 2).translate(0, 0, 0.5)),
     flagPole: G(new THREE.CylinderGeometry(0.035, 0.035, 1.6, 6).translate(0, 0.8, 0)),
@@ -86,21 +86,21 @@ export function createModels() {
       group.add(mesh);
       return mesh;
     };
-    const WALL_Z = 3.5;
+    const WALL_Z = 3.0;
     const REST_Z = 1.3; // placa empujadora apoyada en la cola del kart
-    add(geo.base, mat.woodDark, 0, 0.09, 2.0);
-    add(geo.rail, mat.wood, -1.15, 0.3, 2.0);
-    add(geo.rail, mat.wood, 1.15, 0.3, 2.0);
-    add(geo.wall, mat.wood, 0, 0.7, WALL_Z);
-    add(geo.stripe, mat.stripe, 0, 1.05, WALL_Z);
-    add(geo.stripe, mat.stripe, 0, 0.45, WALL_Z);
-    const pole = add(geo.flagPole, mat.metal, 1.0, 1.2, WALL_Z);
-    const flag = add(geo.flag, mat.red, 1.0, 2.55, WALL_Z);
+    add(geo.base, mat.woodDark, 0, 0.04, 1.9);
+    add(geo.rail, mat.wood, -0.95, 0.12, 1.9);
+    add(geo.rail, mat.wood, 0.95, 0.12, 1.9);
+    add(geo.wall, mat.wood, 0, 0.45, WALL_Z);
+    add(geo.stripe, mat.stripe, 0, 0.75, WALL_Z);
+    add(geo.stripe, mat.stripe, 0, 0.25, WALL_Z);
+    const pole = add(geo.flagPole, mat.metal, 0.85, 0.9, WALL_Z);
+    const flag = add(geo.flag, mat.red, 0.85, 2.25, WALL_Z);
     flag.material = mat.red;
     pole.castShadow = false;
-    const plate = add(geo.plate, mat.red, 0, 0.55, REST_Z);
-    const spring = add(geo.spring, mat.metal, 0, 0.55, REST_Z);
-    const rod = add(geo.rod, mat.metal, 0, 0.55, REST_Z);
+    const plate = add(geo.plate, mat.red, 0, 0.4, REST_Z);
+    const spring = add(geo.spring, mat.metal, 0, 0.4, REST_Z);
+    const rod = add(geo.rod, mat.metal, 0, 0.4, REST_Z);
     let tension = 0;
     let released = false;
     let platePos = REST_Z;
@@ -143,10 +143,12 @@ export function createModels() {
           platePos += plateVel * dt;
           platePos = Math.max(0.2, platePos);
           life += dt;
-          if (life > 3) {
-            const s = Math.max(0.001, 1 - (life - 3) / 0.6);
-            group.scale.setScalar(s);
-            if (life > 3.6) return false;
+          // se hunde en el suelo poco después del lanzamiento
+          if (life > 0.5) {
+            const u = (life - 0.5) / 0.7;
+            group.position.y = -u * 1.2;
+            group.scale.setScalar(Math.max(0.001, 1 - u * 0.5));
+            if (u >= 1) return false;
           }
         }
         flag.rotation.y = Math.sin(time * 5) * 0.35;

@@ -3,9 +3,10 @@
 import * as THREE from 'three';
 import { PART } from './path.js';
 import { sweepGeometry, chunkRun, runsBy } from './geom.js';
-import { detailTexture, fluidTexture, waterfallTexture } from './textures.js';
+import { detailTexture, fluidTexture, waterfallTexture, lavaRockTextures } from './textures.js';
 import { noise1D, fbm2D, createRng } from './rng.js';
 import { THEMES } from './themes.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { isLedgeWallSide } from './road.js';
 
 const T = { open: 0, narrow: 1, cave: 2, jump: 3, boost: 4, slalom: 5 };
@@ -179,6 +180,19 @@ function buildCaves(f, ctx, prof) {
   tunnelTex.repeat.set(1, 1);
   const tunnelMat = res.mat(new THREE.MeshBasicMaterial({ map: tunnelTex, color: pal.tunnel, vertexColors: true, side: THREE.DoubleSide }));
   const portalMat = res.mat(new THREE.MeshStandardMaterial({ color: new THREE.Color(pal.terrainSteep).multiplyScalar(1.15), map: tunnelTex, roughness: 0.9, flatShading: true, emissive: new THREE.Color(pal.terrainSteep), emissiveIntensity: theme === 'volcano' ? 0.45 : 0.22 }));
+  const lava = theme === 'volcano';
+  if (lava) {
+    // Portal del cañón: roca roja con vetas de lava emisivas
+    const lt = lavaRockTextures(ctx.def.seed + 9);
+    lt.map.repeat.set(0.11, 0.11);
+    lt.emissive.repeat.set(0.11, 0.11);
+    portalMat.map = res.tex(lt.map);
+    portalMat.emissiveMap = res.tex(lt.emissive);
+    portalMat.color.set(0xffffff);
+    portalMat.emissive.set(0xffffff);
+    portalMat.emissiveIntensity = 1.15;
+    portalMat.roughness = 0.85;
+  }
   const trimMat = res.mat(new THREE.MeshStandardMaterial({ color: pal.railTop, emissive: pal.lanternColor, emissiveIntensity: theme === 'volcano' ? 1.2 : 0.5, roughness: 0.5 }));
   const M = 13;
   // los frames de borde pueden pertenecer al tramo vecino (sin techo): usar el techo por defecto
@@ -190,6 +204,8 @@ function buildCaves(f, ctx, prof) {
     const a = Math.PI - ((c - 1) / (M - 3)) * Math.PI;
     return [Math.cos(a) * W, wallH + Math.sin(a) * (C - wallH)];
   };
+  const rockGeo = new THREE.IcosahedronGeometry(1, 0).toNonIndexed();
+  const spikeGeo = new THREE.ConeGeometry(1, 2, 5, 1).translate(0, 1, 0).toNonIndexed();
   for (const sg of f.segments) {
     if (sg.type !== 'cave') continue;
     const frames = [];
@@ -218,9 +234,10 @@ function buildCaves(f, ctx, prof) {
       shape.moveTo(-W2, -1.5);
       shape.lineTo(W2, -1.5);
       const rng = createRng(i * 13 + 7);
-      for (let k = 0; k <= 8; k++) {
-        const x = W2 - (k / 8) * 2 * W2;
-        shape.lineTo(x, top + rng.range(-2.5, 2.5) - (Math.abs(x) / W2) * 3);
+      const nTop = lava ? 14 : 8;
+      for (let k = 0; k <= nTop; k++) {
+        const x = W2 - (k / nTop) * 2 * W2;
+        shape.lineTo(x, top + rng.range(-2.5, 2.5) * (lava ? 1.7 : 1) - (Math.abs(x) / W2) * 3 + (lava && k % 2 ? 2.5 : 0));
       }
       shape.lineTo(-W2, -1.5);
       const hole = new THREE.Path();
@@ -237,6 +254,34 @@ function buildCaves(f, ctx, prof) {
       portal.rotation.set(0, Math.atan2(-f.tx[i], -f.tz[i]), 0);
       portal.castShadow = portal.receiveShadow = true;
       group.add(portal);
+      if (lava) {
+        // Peñascos y estalactitas alrededor de la boca para dar relieve
+        const parts = [];
+        const m4 = new THREE.Matrix4(), e4 = new THREE.Euler();
+        const add = (geo, x, y, z, sx, sy, sz, rx = 0, ry = 0) => {
+          const g = geo.clone();
+          m4.compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(e4.set(rx, ry, 0)), new THREE.Vector3(sx, sy, sz));
+          g.applyMatrix4(m4);
+          parts.push(g);
+        };
+        const zf = dir > 0 ? 1.6 : -1.6;
+        for (const sd of [-1, 1]) {
+          for (let k = 0; k < 4; k++) {
+            add(rockGeo, sd * (hw + 2 + k * 2.2 + rng.range(0, 1.2)), 1 + k * 3.2 + rng.range(0, 1.5), zf + rng.range(-0.6, 0.6),
+              rng.range(1.8, 3), rng.range(2.2, 3.6), rng.range(1.6, 2.6), rng.range(0, 3), rng.range(0, 3));
+          }
+        }
+        for (let k = 0; k < 7; k++) {
+          const x = -hw + (k / 6) * 2 * hw + rng.range(-0.8, 0.8);
+          const yy = arch(hw, C, 1 + Math.round((k / 6) * (M - 3)))[1];
+          add(spikeGeo, x, yy - 0.2, zf, rng.range(0.5, 0.9), rng.range(0.8, 1.7), rng.range(0.5, 0.9), Math.PI, 0);
+        }
+        const rocks = new THREE.Mesh(res.geo(mergeGeometries(parts)), portalMat);
+        rocks.position.copy(portal.position);
+        rocks.rotation.copy(portal.rotation);
+        rocks.castShadow = true;
+        group.add(rocks);
+      }
       // Moldura brillante alrededor de la boca
       const pts = [];
       for (let c = 1; c < M - 1; c++) { const p = arch(hw, C, c); pts.push(new THREE.Vector3(p[0] * 1.04, p[1] * 1.03, 0)); }

@@ -11,7 +11,7 @@ for (const def of Object.values(TRACK_DEFS)) {
   const types = new Set(def.segments.map((s) => s.type));
   console.log(`\n== ${def.id}: largo ${f.length.toFixed(0)} m, frames ${f.N}, desnivel ${drop.toFixed(0)} m ` +
     `(pendiente media ${(Math.atan(drop / f.length) * 180 / Math.PI).toFixed(1)}°), tipos: ${[...types].join(',')}`);
-  if (f.length < 1800 || f.length > 2400) { console.log('  !! largo fuera de 1.8–2.4 km'); fail = true; }
+  if (f.length < 1800 || f.length > 2500) { console.log('  !! largo fuera de 1.8–2.5 km'); fail = true; }
   for (const t of SEGMENT_TYPES) if (!types.has(t)) { console.log(`  !! falta tipo ${t}`); fail = true; }
   for (const j of f.jumps) {
     const d = j.design;

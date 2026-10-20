@@ -10,6 +10,7 @@ import { trackScreen } from './tracks.js';
 import { shopScreen } from './shop.js';
 import { settingsScreen } from './settings.js';
 import { audio } from '../audio/index.js';
+import { trackName } from './meta.js';
 
 const SCREENS = { title: titleScreen, characters: characterScreen, tracks: trackScreen, shop: shopScreen, settings: settingsScreen };
 
@@ -56,10 +57,11 @@ export function createUI(game, root) {
   ctx.router = router;
 
   // transición con fundido (la construcción de la pista bloquea unos ms)
+  // `deferred`: fn termina el trabajo en frames posteriores y el fundido se retira cuando acaba
   function fadeThen(fn) {
     fader.classList.add('on');
     setTimeout(() => {
-      try { fn(); } finally { requestAnimationFrame(() => fader.classList.remove('on')); }
+      try { fn(); } finally { requestAnimationFrame(() => requestAnimationFrame(() => fader.classList.remove('on'))); }
     }, 300);
   }
 
@@ -70,12 +72,24 @@ export function createUI(game, root) {
     current = null; dim = null;
   }
 
+  // pantalla de carga: se pinta antes de construir la pista (la construcción bloquea el hilo unos cientos de ms)
   ctx.startRace = (trackId, characterId, opts) => fadeThen(() => {
     clearScreen();
-    ctx.lastCharacter = characterId;
-    stage?.leave();
-    game.paused = false;
-    game.setMode(createRaceMode(ctx, trackId, characterId, opts));
+    const loading = h('div', { class: 'cr-loading' },
+      h('div', { class: 'cr-loading__t cr-outline' }, trackName(trackId)),
+      h('div', { class: 'cr-loading__bar' }, h('i')),
+      h('div', { class: 'cr-loading__s' }, 'Preparando la pista…'));
+    root.appendChild(loading);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      try {
+        ctx.lastCharacter = characterId;
+        stage?.leave();
+        game.paused = false;
+        game.setMode(createRaceMode(ctx, trackId, characterId, opts));
+      } finally {
+        loading.remove();
+      }
+    }));
   });
 
   ctx.exitRace = (screen = 'title', p) => fadeThen(() => {

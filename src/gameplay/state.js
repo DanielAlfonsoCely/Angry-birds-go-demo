@@ -29,6 +29,7 @@ export function makeRacer(kart, index, isPlayer) {
       seed: Math.random() * 100,
       lane: Math.random() * 2 - 1,
       padLove: Math.random(),
+      coinLove: isPlayer ? 1 : 0.2 + Math.random() * 0.8,
       itemWait: 1, itemAge: 0, lastItem: null,
       powerWait: 1, powerAge: 0, wasReady: false,
       takeoffN: -1, willTrick: false, trickDone: false,

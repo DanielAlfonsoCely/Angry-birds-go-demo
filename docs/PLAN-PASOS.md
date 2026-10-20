@@ -18,7 +18,9 @@ Ya hecho (Ola 1 / Fase 0): Físicas ✅, Audio ✅, Arte parte 1, Pistas parte 1
 
 ## Paso 1: ✅ completado (commit a6c70f0)
 
-## Paso 2: Sensación de juego y pulido
+## Paso 2: ✅ completado — en pausa esperando la prueba del usuario
+
+### Paso 2: Sensación de juego y pulido
 **Objetivo común**: que se sienta rápido, fluido, justo y divertido.
 - Pistas (Sonnet): pendientes medias de 8–14° sin romper saltos, puertas de slalom y portal del cañón.
 - Físicas (Sonnet): ajuste fino con telemetría sobre las pistas reales (derrape, aire, aterrizajes, cámara, que el kart nunca se atasque).
