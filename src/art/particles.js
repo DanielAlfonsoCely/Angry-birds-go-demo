@@ -23,6 +23,21 @@ const KINDS = {
   hit:        { blend: 'add', count: 16, life: [0.3, 0.55], speed: [4, 9], up: [1, 4], spread: 1, size: [0.35, 0.6], grow: -0.5, color: 0xfff3b0, color2: 0xff9f1c, alpha: 1, gravity: 8, drag: 2, shape: 3 },
 };
 
+// Paletas por tema para 'dust' y 'landing' cuando no se pasa color. Cada entrada: [color inicial, color final, forma(opcional)]
+// y peso; el color se elige por partícula. Formas: 0 bola, 1 hoja girando.
+const THEME_DUST = {
+  snow: { alpha: 0.85, pal: [[0xf6faff, 0xdbe8f7, 0, 3], [0xcfe3f7, 0xeaf3fc, 0, 1]], gravity: 1.5 },
+  jungle: { alpha: 0.7, pal: [[0x8a6a45, 0xb59a74, 0, 4], [0x5a4630, 0x8a7352, 0, 2], [0x55b13f, 0x8fd14f, 1, 2]], gravity: 0.6 },
+  volcano: { alpha: 0.7, pal: [[0x9a4f36, 0xc7826a, 0, 3], [0x4a403c, 0x7d726b, 0, 3], [0x2e2927, 0x5a514d, 0, 1]], gravity: -0.3 },
+};
+const pickPal = (pal) => {
+  let t = 0;
+  for (const e of pal) t += e[3];
+  let r = Math.random() * t;
+  for (const e of pal) { r -= e[3]; if (r <= 0) return e; }
+  return pal[0];
+};
+
 const RAINBOW = [0xff595e, 0xffca3a, 0x8ac926, 0x1982c4, 0x6a4c93, 0xff70a6].map((h) => new THREE.Color(h));
 
 function makePool(cap, additive) {
@@ -113,7 +128,8 @@ const _c1 = new THREE.Color();
 const _d = new THREE.Vector3();
 
 /** @returns {import('../core/contracts.js').Particles} */
-export function createParticles(scene) {
+export function createParticles(scene, theme) {
+  let themeCfg = THEME_DUST[theme] ?? null;
   const normal = makePool(CAP_NORMAL, false);
   const additive = makePool(CAP_ADD, true);
   const group = new THREE.Group();
@@ -144,7 +160,7 @@ export function createParticles(scene) {
     pool.pos[k * 3] = p.x + (Math.random() - 0.5) * (cfg.spread * 0.6 + area);
     pool.pos[k * 3 + 1] = p.y + Math.random() * 0.2 * s + (area ? Math.random() * area * 0.25 : 0) + (cfg.shape === 0 ? cfg.size[1] * s * 0.45 : 0);
     pool.pos[k * 3 + 2] = p.z + (Math.random() - 0.5) * (cfg.spread * 0.6 + area);
-    let vx, vy, vz;
+    let vx, vy, vz, shapeOverride = -1;
     const sp = rr(cfg.speed) * (cfg.ring ? s : 1);
     if (cfg.ring) {
       const a = (i / total) * Math.PI * 2 + Math.random() * 0.2;
@@ -175,6 +191,13 @@ export function createParticles(scene) {
     if (cfg.rainbow) {
       _c0.copy(RAINBOW[Math.floor(Math.random() * RAINBOW.length)]);
       _c1.copy(_c0);
+    } else if (themeCfg && opts.color == null && (cfg === KINDS.dust || cfg === KINDS.landing)) {
+      const e = pickPal(themeCfg.pal);
+      _c0.setHex(e[0]); _c1.setHex(e[1]);
+      shapeOverride = e[2];
+      pool.alpha0[k] = themeCfg.alpha;
+      pool.gravity[k] = e[2] === 1 ? 3 : themeCfg.gravity;
+      if (e[2] === 1) { pool.size0[k] = 0.22 + Math.random() * 0.12; pool.grow[k] = 0; pool.life[k] = pool.maxLife[k] = 0.8 + Math.random() * 0.6; pool.spin[k] = (Math.random() - 0.5) * 8; }
     } else {
       _c0.setHex(opts.color ?? cfg.color);
       _c1.setHex(opts.color != null ? opts.color : (cfg.color2 ?? cfg.color));
@@ -182,7 +205,7 @@ export function createParticles(scene) {
     }
     pool.c0[k * 3] = _c0.r; pool.c0[k * 3 + 1] = _c0.g; pool.c0[k * 3 + 2] = _c0.b;
     pool.c1[k * 3] = _c1.r; pool.c1[k * 3 + 1] = _c1.g; pool.c1[k * 3 + 2] = _c1.b;
-    pool.extra[k * 4 + 2] = cfg.shape;
+    pool.extra[k * 4 + 2] = shapeOverride >= 0 ? shapeOverride : cfg.shape;
     pool.extra[k * 4 + 3] = Math.random() * 6.28;
   }
 
@@ -258,7 +281,10 @@ export function createParticles(scene) {
     for (const r of rings) r.mesh.material.dispose();
   }
 
-  return { emit, update, dispose, group };
+  /** Cambia el tema de las partículas de polvo (nieve / tierra y hojas / ceniza). */
+  function setTheme(t) { themeCfg = THEME_DUST[t] ?? null; }
+
+  return { emit, update, dispose, group, setTheme };
 }
 
 const WHITE = new THREE.Color(0xffffff);

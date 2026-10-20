@@ -121,6 +121,8 @@
  * Extras de src/art: createCharacterPreview(characterId) → {group, update(dt), model} (menús);
  * createProp(kind, theme, opts?) con opts {light, variant, random}.
  * Extra de src/audio: audio.setEngine(speedRatio, boosting, drifting?).
+ * createParticles(scene, theme?) y particles.setTheme(theme): el polvo toma el color del tema.
+ * Track: sample(t, out?) y getGroundAt(pos, out?) aceptan un objeto de salida opcional (sin asignaciones).
  * Pausa: la UI es dueña de la tecla de pausa; gameplay solo expone race.pause(bool).
  */
 

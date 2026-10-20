@@ -1,4 +1,5 @@
-// Props decorativos por tema. Geometrías fusionadas por material y cacheadas por (kind, theme, variante);
+// Props decorativos por tema. `flag` (tela) y `geyser` (chorro) se animan solos con materiales de shader (no hay que llamar a ningún update;
+// con InstancedMesh vía getPropGeometries habría que asignar mesh.onBeforeRender de getMat('cloth'|'jet'); mejor usar createProp para flag y geyser). Geometrías fusionadas por material y cacheadas por (kind, theme, variante);
 // cada llamada devuelve un Group nuevo que reutiliza geometrías y materiales compartidos.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
@@ -25,7 +26,7 @@ const INFO = {
 };
 
 const cache = new Map();
-const rbox = (w, h, d, r) => new RoundedBoxGeometry(w, h, d, 2, r);
+const rbox = (w, h, d, r) => (r <= 0.06 ? new THREE.BoxGeometry(w, h, d) : new RoundedBoxGeometry(w, h, d, 1, r));
 
 /**
  * Prop decorativo. El origen está en el suelo. Para `sign`, el cartel mira hacia +Z y la flecha apunta a +X
@@ -223,12 +224,12 @@ const BUILDERS = {
     // banderín triangular ondulado
     const shape = new THREE.Shape();
     shape.moveTo(0, 0); shape.quadraticCurveTo(0.9, 0.25, 1.9, -0.55); shape.quadraticCurveTo(0.9, -0.65, 0, -1.3); shape.lineTo(0, 0);
-    const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.04, bevelEnabled: false, curveSegments: 6 });
-    b.add(geo, cloth[0], { p: [0.06, 5.85, -0.02], mat: 'smooth' });
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.04, bevelEnabled: false, curveSegments: 8 });
+    b.add(geo, cloth[0], { p: [0.06, 5.85, -0.02], mat: 'cloth' });
     // franja
     const s2 = new THREE.Shape();
     s2.moveTo(0, -0.45); s2.quadraticCurveTo(0.6, -0.4, 1.25, -0.62); s2.quadraticCurveTo(0.6, -0.8, 0, -0.85); s2.lineTo(0, -0.45);
-    b.add(new THREE.ExtrudeGeometry(s2, { depth: 0.06, bevelEnabled: false, curveSegments: 4 }), cloth[1], { p: [0.06, 5.85, -0.03] });
+    b.add(new THREE.ExtrudeGeometry(s2, { depth: 0.06, bevelEnabled: false, curveSegments: 6 }), cloth[1], { p: [0.06, 5.85, -0.03], mat: 'cloth' });
     // base
     b.add(new THREE.CylinderGeometry(0.35, 0.45, 0.3, 8), th === 'volcano' ? P.rockDark : P.rock, { p: [0, 0.15, 0], mat: 'flat' });
   },
@@ -267,8 +268,8 @@ const BUILDERS = {
     const pool = th === 'volcano' ? 0xff6a1f : th === 'jungle' ? 0x4cc9c0 : 0x9be7ff;
     b.add(new THREE.CylinderGeometry(1.3, 1.3, 0.12, 14), pool, { p: [0, 0.18, 0], mat: th === 'volcano' ? 'glow' : 'gloss' });
     // columna (vapor/agua/lava) estática y estilizada
-    const col = th === 'volcano' ? 0xffb347 : 0xffffff;
-    const mat = th === 'volcano' ? 'glow' : 'ice';
+    const col = th === 'volcano' ? 0xffb347 : th === 'jungle' ? 0xc9f5ee : 0xe3f6ff;
+    const mat = 'jet';
     const blobs = [[0.55, 1.0], [0.5, 2.0], [0.62, 3.0], [0.8, 3.9], [0.55, 4.6]];
     blobs.forEach(([s, y], i) => {
       const geo = new THREE.IcosahedronGeometry(1, 1);
@@ -279,9 +280,9 @@ const BUILDERS = {
   snowman(b, th, P) {
     if (th === 'snow') {
       const white = 0xf8fbff;
-      b.add(new THREE.SphereGeometry(0.75, 14, 10), white, { p: [0, 0.65, 0] });
-      b.add(new THREE.SphereGeometry(0.55, 14, 10), white, { p: [0, 1.55, 0] });
-      b.add(new THREE.SphereGeometry(0.4, 14, 10), white, { p: [0, 2.2, 0] });
+      b.add(new THREE.SphereGeometry(0.75, 10, 7), white, { p: [0, 0.65, 0] });
+      b.add(new THREE.SphereGeometry(0.55, 10, 7), white, { p: [0, 1.55, 0] });
+      b.add(new THREE.SphereGeometry(0.4, 10, 7), white, { p: [0, 2.2, 0] });
       b.add(new THREE.ConeGeometry(0.08, 0.45, 8), 0xff8c2b, { p: [0, 2.2, -0.55], r: [-Math.PI / 2, 0, 0] });
       for (const sx of [-1, 1]) b.add(new THREE.SphereGeometry(0.055, 8, 6), 0x22242e, { p: [sx * 0.14, 2.32, -0.34] });
       for (let i = 0; i < 5; i++) {
@@ -346,11 +347,11 @@ const BUILDERS = {
     const green = th === 'snow' ? 0x5f8f86 : th === 'jungle' ? 0x3f9b4b : 0x4b5a35;
     const h = 3.6 + v * 0.8;
     const arm = (sx, y, len, up) => {
-      b.add(new THREE.CapsuleGeometry(0.28, len, 4, 8), green, { p: [sx * (0.38 + len / 2), y, 0], r: [0, 0, Math.PI / 2], mat: 'flat' });
-      b.add(new THREE.CapsuleGeometry(0.26, up, 4, 8), green, { p: [sx * (0.4 + len), y + up / 2, 0], mat: 'flat' });
+      b.add(new THREE.CapsuleGeometry(0.28, len, 2, 6), green, { p: [sx * (0.38 + len / 2), y, 0], r: [0, 0, Math.PI / 2], mat: 'flat' });
+      b.add(new THREE.CapsuleGeometry(0.26, up, 2, 6), green, { p: [sx * (0.4 + len), y + up / 2, 0], mat: 'flat' });
       if (th === 'snow') b.add(new THREE.SphereGeometry(0.3, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), 0xf8fbff, { p: [sx * (0.4 + len), y + up + 0.1, 0], s: [1, 0.5, 1], mat: 'flat' });
     };
-    b.add(new THREE.CapsuleGeometry(0.42, h, 4, 10), green, { p: [0, h / 2 + 0.3, 0], mat: 'flat' });
+    b.add(new THREE.CapsuleGeometry(0.42, h, 2, 7), green, { p: [0, h / 2 + 0.3, 0], mat: 'flat' });
     // costillas
     for (let k = 0; k < 6; k++) {
       const a = (k / 6) * Math.PI * 2;

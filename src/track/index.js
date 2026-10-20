@@ -43,6 +43,45 @@ function createResources() {
   };
 }
 
+// Distancia a partir de la cual las mallas de la pista se ocultan (la niebla de cada tema ya las cubre por completo)
+const CULL_DIST = { snow: 580, jungle: 460, volcano: 440 };
+
+/**
+ * Oculta las mallas lejanas del grupo. Una malla ayudante (sin color) recibe la cámara en onBeforeRender
+ * y actualiza `visible` para el siguiente fotograma. No crea objetos en el loop.
+ */
+function createDistanceCuller(group, far) {
+  const items = [];
+  group.traverse((o) => {
+    if ((!o.isMesh && !o.isInstancedMesh) || !o.geometry) return;
+    if (o.isInstancedMesh) { if (!o.boundingSphere) o.computeBoundingSphere(); }
+    else if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+    const bs = o.isInstancedMesh ? o.boundingSphere : o.geometry.boundingSphere;
+    // solo mallas con transformación propia identidad o con centro calculable en mundo
+    o.updateWorldMatrix(true, false);
+    const c = bs.center.clone().applyMatrix4(o.matrixWorld);
+    const r = bs.radius * o.matrixWorld.getMaxScaleOnAxis();
+    if (o.name === 'terrain-far' || r > 400) return; // el terreno lejano siempre se dibuja
+    items.push({ o, c, r });
+  });
+  const helper = new THREE.Mesh(
+    new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0, 0, 0, 0], 3)),
+    new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }),
+  );
+  helper.frustumCulled = false;
+  helper.name = 'distance-culler';
+  helper.onBeforeRender = (renderer, scene, camera) => {
+    const p = camera.position;
+    for (let k = 0; k < items.length; k++) {
+      const it = items[k];
+      const d = Math.hypot(it.c.x - p.x, it.c.y - p.y, it.c.z - p.z) - it.r;
+      it.o.visible = d < far;
+    }
+  };
+  group.add(helper);
+  return { helper, items };
+}
+
 /** @returns {import('../core/contracts.js').Track} */
 export function buildTrack(trackId) {
   const meta = TRACKS.find((t) => t.id === trackId) ?? TRACKS[0];
@@ -64,6 +103,7 @@ export function buildTrack(trackId) {
   const pickups = buildPickups(f, ctx, layout);
   const terrain = buildTerrain(f, ctx);
   const decor = buildDecor(f, ctx, layout);
+  const culler = createDistanceCuller(group, CULL_DIST[meta.theme] ?? 500);
 
   const _q = new THREE.Quaternion();
   const _m = new THREE.Matrix4();

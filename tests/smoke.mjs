@@ -21,7 +21,7 @@ const keyPlan = (args.keys ?? '').split(',').filter(Boolean).map((s) => {
 });
 
 mkdirSync('tests/screenshots', { recursive: true });
-const server = await createServer({ server: { port: 5199, strictPort: false }, logLevel: 'error' });
+const server = await createServer({ server: { port: 5199, strictPort: false, hmr: false, watch: null }, logLevel: 'error' });
 await server.listen();
 const port = server.config.server.port;
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });

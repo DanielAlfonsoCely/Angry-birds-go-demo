@@ -4,8 +4,9 @@ import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => {
-  const [k, v] = a.replace(/^--/, '').split('=');
-  return [k, v ?? 'true'];
+  const t = a.replace(/^--/, '');
+  const i = t.indexOf('=');
+  return i < 0 ? [t, 'true'] : [t.slice(0, i), t.slice(i + 1)];
 }));
 const SHOTS = {
   'chars-34': '?view=chars&angle=34',
@@ -37,8 +38,9 @@ for (const name of only) {
   await page.waitForFunction(() => window.__ready === true, null, { timeout: 60000 }).catch(() => errors.push(`timeout ${name}`));
   await page.waitForTimeout(wait);
   const info = await page.evaluate(() => window.__info);
-  await page.screenshot({ path: `tests/screenshots/art-${name}.png` });
-  console.log(`art-${name}.png`, JSON.stringify(info));
+  const file = name.replace(/[^a-z0-9-]+/gi, '_');
+  await page.screenshot({ path: `tests/screenshots/art-${file}.png` });
+  console.log(`art-${file}.png`, JSON.stringify(info));
 }
 await browser.close();
 await server.close();

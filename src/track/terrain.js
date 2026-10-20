@@ -126,7 +126,7 @@ export function buildTerrain(f, ctx) {
 
   // --- Laderas (una tira de 15 columnas: lado izq lejano → centro → lado der lejano) ---
   const detail = res.tex(detailTexture(def.seed, theme === 'snow' ? 'snow' : 'rock'));
-  const terrainMat = res.mat(new THREE.MeshStandardMaterial({ map: detail, vertexColors: true, roughness: 0.95, metalness: 0 }));
+  const terrainMat = res.mat(new THREE.MeshStandardMaterial({ map: detail, vertexColors: true, roughness: 0.95, metalness: 0, emissive: theme === 'volcano' ? 0x3a1a12 : 0x000000 }));
   ctx.terrainMat = terrainMat;
   const cFlat = new THREE.Color(pal.terrainFlat), cSteep = new THREE.Color(pal.terrainSteep);
   const COLS = K * 2 + 1;
@@ -178,7 +178,7 @@ function buildCaves(f, ctx, prof) {
   const tunnelTex = res.tex(detailTexture(ctx.def.seed + 5, 'rock'));
   tunnelTex.repeat.set(1, 1);
   const tunnelMat = res.mat(new THREE.MeshBasicMaterial({ map: tunnelTex, color: pal.tunnel, vertexColors: true, side: THREE.DoubleSide }));
-  const portalMat = res.mat(new THREE.MeshStandardMaterial({ color: new THREE.Color(pal.terrainSteep).multiplyScalar(1.15), map: tunnelTex, roughness: 0.9, flatShading: true }));
+  const portalMat = res.mat(new THREE.MeshStandardMaterial({ color: new THREE.Color(pal.terrainSteep).multiplyScalar(1.15), map: tunnelTex, roughness: 0.9, flatShading: true, emissive: new THREE.Color(pal.terrainSteep), emissiveIntensity: theme === 'volcano' ? 0.45 : 0.22 }));
   const trimMat = res.mat(new THREE.MeshStandardMaterial({ color: pal.railTop, emissive: pal.lanternColor, emissiveIntensity: theme === 'volcano' ? 1.2 : 0.5, roughness: 0.5 }));
   const M = 13;
   // los frames de borde pueden pertenecer al tramo vecino (sin techo): usar el techo por defecto
@@ -375,21 +375,36 @@ function buildWaterfalls(f, ctx, prof, animated) {
     if (sg.type !== 'narrow') continue;
     for (const side of [-1, 1]) {
       if (isLedgeWallSide(f, ctx.def, Math.round((sg.i0 + sg.i1) / 2), side)) continue;
-      const i = Math.round(sg.i0 + (sg.i1 - sg.i0) * rng.range(0.25, 0.75));
+      const ic = Math.round(sg.i0 + (sg.i1 - sg.i0) * rng.range(0.3, 0.7));
       const P = side < 0 ? prof.L : prof.R;
-      const latTop = P.lat[i * K + 6], hTop = P.h[i * K + 6];
-      const latBot = P.lat[i * K + 4];
-      const width = rng.range(10, 16);
-      const height = hTop - FLOOR;
-      const geo = new THREE.PlaneGeometry(width, Math.hypot(height, latTop - latBot), 1, 1);
+      const NW = 14, rows = [3, 4, 5, 6]; // ancho en frames y puntos del perfil que recorre la cascada (de abajo a arriba)
+      const pos = new Float32Array(NW * rows.length * 3), uv = new Float32Array(NW * rows.length * 2);
+      const idx = [];
+      for (let j = 0; j < NW; j++) {
+        const i = ic - NW / 2 + j;
+        for (let r = 0; r < rows.length; r++) {
+          const k = rows[r], lat = side * (P.lat[i * K + k] - 0.5);
+          const v = (j * rows.length + r);
+          pos[v * 3] = f.px[i] + f.rx[i] * lat;
+          pos[v * 3 + 1] = f.py[i] + P.h[i * K + k] + 0.45;
+          pos[v * 3 + 2] = f.pz[i] + f.rz[i] * lat;
+          uv[v * 2] = j / (NW - 1);
+          uv[v * 2 + 1] = r * 1.4;
+          if (j < NW - 1 && r < rows.length - 1) { const a = v, b = v + rows.length; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+        }
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+      geo.setIndex(idx);
+      geo.computeVertexNormals();
       const m = new THREE.Mesh(res.geo(geo), mat);
-      const midLat = side * (latTop + latBot) / 2 - side * 2;
-      m.position.set(f.px[i] + f.rx[i] * midLat, f.py[i] + (hTop + FLOOR) / 2, f.pz[i] + f.rz[i] * midLat);
-      m.rotation.set(0, Math.atan2(f.rx[i], f.rz[i]) + (side > 0 ? Math.PI : 0), 0, 'YXZ');
-      m.rotateX(-Math.atan2(latTop - latBot, height) * (side > 0 ? 1 : 1));
+      m.name = 'waterfall';
       group.add(m);
-      const foam = new THREE.Mesh(res.geo(new THREE.CircleGeometry(width * 0.7, 16).rotateX(-Math.PI / 2)), foamMat);
-      const fl = side * (latBot - 3);
+      (ctx.waterfalls ??= []).push({ i0: ic - NW / 2 - 3, i1: ic + NW / 2 + 3, side });
+      const i = ic, latBot = P.lat[i * K + 3], width = NW;
+      const foam = new THREE.Mesh(res.geo(new THREE.CircleGeometry(width * 0.55, 16).rotateX(-Math.PI / 2)), foamMat);
+      const fl = side * (latBot + 1);
       foam.position.set(f.px[i] + f.rx[i] * fl, f.py[i] + FLOOR + 0.8, f.pz[i] + f.rz[i] * fl);
       group.add(foam);
     }

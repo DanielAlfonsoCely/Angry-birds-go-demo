@@ -6,6 +6,9 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 
 // ---------- Materiales compartidos (vertexColors) ----------
 const MATS = {};
+/** Tiempo compartido (s) de los materiales animados 'cloth' y 'jet'; se actualiza solo al renderizar esas mallas. */
+const ART_TIME = { value: 0 };
+const GLSL_HASH = 'fract(sin(dot(wp.xz, vec2(12.9898, 78.233))) * 43758.5453)';
 /**
  * Materiales globales compartidos por todo el arte.
  * smooth: personajes · flat: props low-poly · gloss: pintura del kart · glow: emisivo sin luz
@@ -44,6 +47,38 @@ export function getMat(kind = 'smooth') {
           '#include <emissivemap_fragment>',
           '#include <emissivemap_fragment>\n totalEmissiveRadiance += diffuseColor.rgb * 0.55;',
         );
+      };
+      break;
+    case 'cloth':
+      // tela que ondea: el movimiento crece con la distancia al mástil (x local)
+      m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, side: THREE.DoubleSide });
+      m.onBeforeCompile = (s) => {
+        s.uniforms.uTime = ART_TIME;
+        s.vertexShader = 'uniform float uTime;\n' + s.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+          vec4 wp = modelMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+          float ph = ${GLSL_HASH} * 6.28;
+          float k = clamp(position.x / 1.9, 0.0, 1.2);
+          transformed.z += sin(position.x * 3.2 - uTime * 7.0 + ph) * 0.2 * k;
+          transformed.y += sin(position.x * 2.4 - uTime * 5.0 + ph) * 0.07 * k;`);
+      };
+      break;
+    case 'jet':
+      // chorro periódico (agua/vapor/lava): cada géiser tiene su fase según su posición en el mundo
+      m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.3, transparent: true, opacity: 0.85, emissive: 0xffffff, emissiveIntensity: 0 });
+      m.onBeforeCompile = (s) => {
+        s.uniforms.uTime = ART_TIME;
+        s.vertexShader = 'uniform float uTime;\nvarying float vJ;\n' + s.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+          vec4 wp = modelMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+          float p = fract(uTime / 5.0 + ${GLSL_HASH});
+          float h = 0.1;
+          if (p < 0.45) h += 0.9 * smoothstep(0.0, 0.1, p) * (1.0 - smoothstep(0.28, 0.45, p));
+          float wob = 1.0 + 0.07 * sin(uTime * 14.0 + position.y * 3.0) * h;
+          transformed.y = 0.4 + (position.y - 0.4) * h;
+          transformed.xz *= mix(0.55, 1.0, h) * wob;
+          vJ = h;`);
+        s.fragmentShader = 'varying float vJ;\n' + s.fragmentShader
+          .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance += diffuseColor.rgb * 0.6;')
+          .replace('#include <dithering_fragment>', '#include <dithering_fragment>\n gl_FragColor.a *= clamp(0.2 + vJ, 0.0, 1.0);');
       };
       break;
     default:
@@ -153,8 +188,8 @@ export class Builder {
     const dir = vb.clone().sub(va);
     const len = dir.length();
     const geo = o.cyl
-      ? new THREE.CylinderGeometry(o.r2 ?? radius, radius, len, o.seg ?? 8)
-      : new THREE.CapsuleGeometry(radius, Math.max(0.001, len), 4, o.seg ?? 8);
+      ? new THREE.CylinderGeometry(o.r2 ?? radius, radius, len, o.seg ?? 6)
+      : new THREE.CapsuleGeometry(radius, Math.max(0.001, len), 2, o.seg ?? 6);
     const q = new THREE.Quaternion().setFromUnitVectors(_up, dir.normalize());
     const mid = va.add(vb).multiplyScalar(0.5);
     return this.add(geo, color, { ...o, p: [mid.x, mid.y, mid.z], q });
@@ -179,12 +214,17 @@ export class Builder {
   }
 }
 
+function tickArtTime() {
+  ART_TIME.value = performance.now() / 1000;
+}
+
 /** Crea un Group con una malla por material a partir de geometrías ya fusionadas. */
 export function meshesFrom(geos, { cast = true, receive = false } = {}) {
   const g = new THREE.Group();
   for (const [k, geo] of Object.entries(geos)) {
     const m = new THREE.Mesh(geo, getMat(k));
-    const shadowless = k === 'glow' || k === 'ice';
+    const shadowless = k === 'glow' || k === 'ice' || k === 'jet' || k === 'cloth';
+    if (k === 'cloth' || k === 'jet') m.onBeforeRender = tickArtTime;
     m.castShadow = cast && !shadowless;
     m.receiveShadow = receive && k !== 'glow';
     g.add(m);

@@ -20,10 +20,10 @@ const CREAM = 0xfff1d6;
 // esferas con detalle según tamaño (las pequeñas no necesitan tantos polígonos)
 const sph = (r, w = 16, h = 12) => {
   const k = r < 0.05 ? 0.5 : r < 0.1 ? 0.7 : r < 0.2 ? 0.85 : 1;
-  return new THREE.SphereGeometry(r, Math.max(6, Math.round(w * k)), Math.max(4, Math.round(h * k)));
+  return new THREE.SphereGeometry(r, Math.max(6, Math.round(w * k * 0.5)), Math.max(4, Math.round(h * k * 0.5)));
 };
 const cone = (r, h, s = 10) => new THREE.ConeGeometry(r, h, s);
-const rbox = (w, h, d, r) => new RoundedBoxGeometry(w, h, d, 3, r);
+const rbox = (w, h, d, r) => new RoundedBoxGeometry(w, h, d, 1, r);
 
 // ---------- piezas comunes ----------
 /** Ojos grandes: esclerótica + pupila + brillo (+ párpado superior opcional). */
@@ -31,11 +31,11 @@ function eyes(b, { spread, r, y = 0, z = 0, lid = null, out = 0.12, pupil = 0.52
   for (const sx of [-1, 1]) {
     const ex = sx * spread;
     const dir = new THREE.Vector3(sx * Math.sin(out) * 0.6, 0.02, -1).normalize();
-    b.add(sph(r, 20, 16), WHITE, { p: [ex, y, z] });
+    b.add(sph(r, 16, 12), WHITE, { p: [ex, y, z] });
     const pc = new THREE.Vector3(ex, y, z).addScaledVector(dir, r * 0.8);
     pc.x -= sx * r * 0.08; // pupilas un poco hacia el centro: mirada concentrada
     const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), dir);
-    b.add(sph(r * pupil, 16, 12), INK, { p: pc.toArray(), q, s: [1, 1.08, 0.5] });
+    b.add(sph(r * pupil, 12, 9), INK, { p: pc.toArray(), q, s: [1, 1.08, 0.5] });
     // brillo (mismo lado para ambos ojos, como una luz arriba a la derecha)
     b.add(sph(r * 0.17, 10, 8), WHITE, { p: [pc.x + r * 0.2, pc.y + r * 0.24, pc.z - r * 0.24], mat: 'glow' });
     b.add(sph(r * 0.08, 8, 6), WHITE, { p: [pc.x - r * 0.16, pc.y - r * 0.2, pc.z - r * 0.22], mat: 'glow' });
@@ -192,14 +192,14 @@ export const CHARACTER_DEFS = {
       blush(b, { spread: 0.3, y: -0.12, z: -0.32, r: 0.065 });
       // casco de minera
       b.add(new THREE.SphereGeometry(0.47, 22, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0xffc93c, { p: [0, 0.2, 0.02], s: [1.02, 0.85, 1.02], mat: 'gloss' });
-      b.add(new THREE.CylinderGeometry(0.55, 0.56, 0.05, 24), 0xf2b21b, { p: [0, 0.21, 0.0], mat: 'gloss' });
+      b.add(new THREE.CylinderGeometry(0.55, 0.56, 0.05, 8), 0xf2b21b, { p: [0, 0.21, 0.0], mat: 'gloss' });
       b.add(rbox(0.06, 0.08, 0.7, 0.02), 0xf2b21b, { p: [0, 0.6, 0.04], mat: 'gloss' });
       // linterna del casco
-      b.add(new THREE.CylinderGeometry(0.1, 0.12, 0.12, 14), 0x4a4f5e, { p: [0, 0.4, -0.42], r: [Math.PI / 2 - 0.4, 0, 0], mat: 'metal' });
-      b.add(new THREE.CylinderGeometry(0.08, 0.08, 0.02, 14), 0xfff3a6, { p: [0, 0.38, -0.48], r: [Math.PI / 2 - 0.4, 0, 0], mat: 'glow' });
+      b.add(new THREE.CylinderGeometry(0.1, 0.12, 0.12, 8), 0x4a4f5e, { p: [0, 0.4, -0.42], r: [Math.PI / 2 - 0.4, 0, 0], mat: 'metal' });
+      b.add(new THREE.CylinderGeometry(0.08, 0.08, 0.02, 8), 0xfff3a6, { p: [0, 0.38, -0.48], r: [Math.PI / 2 - 0.4, 0, 0], mat: 'glow' });
       // gafas redondas
       for (const sx of [-1, 1]) {
-        b.add(new THREE.TorusGeometry(0.15, 0.022, 8, 22), 0x9c6b1e, { p: [sx * 0.17, 0.07, -0.45], r: [0, sx * 0.25, 0], mat: 'metal' });
+        b.add(new THREE.TorusGeometry(0.15, 0.022, 5, 14), 0x9c6b1e, { p: [sx * 0.17, 0.07, -0.45], r: [0, sx * 0.25, 0], mat: 'metal' });
       }
       b.add(new THREE.TorusGeometry(0.05, 0.015, 6, 10, Math.PI), 0x9c6b1e, { p: [0, 0.1, -0.5], mat: 'metal' });
     },
@@ -220,11 +220,11 @@ export const CHARACTER_DEFS = {
     },
     kart(b) {
       // taladro delantero
-      b.add(new THREE.CylinderGeometry(0.16, 0.2, 0.18, 12), 0x4a4f5e, { p: [0, 0.48, -1.5], r: [Math.PI / 2, 0, 0], mat: 'metal' });
+      b.add(new THREE.CylinderGeometry(0.16, 0.2, 0.18, 9), 0x4a4f5e, { p: [0, 0.48, -1.5], r: [Math.PI / 2, 0, 0], mat: 'metal' });
       b.add(cone(0.18, 0.62, 12), 0xd9dde6, { p: [0, 0.48, -1.88], r: [-Math.PI / 2, 0, 0], mat: 'metal' });
       for (let i = 0; i < 4; i++) {
         const r = 0.17 - i * 0.04;
-        b.add(new THREE.TorusGeometry(r, 0.022, 6, 14), 0xffc93c, { p: [0, 0.48, -1.66 - i * 0.12], r: [0.2, 0, 0], mat: 'metal' });
+        b.add(new THREE.TorusGeometry(r, 0.022, 4, 10), 0xffc93c, { p: [0, 0.48, -1.66 - i * 0.12], r: [0.2, 0, 0], mat: 'metal' });
       }
       // linterna sobre el motor
       b.add(new THREE.CylinderGeometry(0.035, 0.035, 0.45, 8), 0x3a3f4f, { p: [0.3, 1.05, 1.15] });
@@ -259,9 +259,9 @@ export const CHARACTER_DEFS = {
         b.add(cone(0.08, 0.16, 5), 0x2b1d14, { p: [sx * 0.29, 0.62, 0.02], r: [0, 0, -sx * 0.32], s: [1, 1, 0.65] });
       }
       // gafas de carreras en la frente
-      b.add(new THREE.TorusGeometry(0.4, 0.035, 6, 28), 0x3a3f4f, { p: [0, 0.22, 0.02], r: [Math.PI / 2 + 0.35, 0, 0], s: [1.08, 1, 1] });
+      b.add(new THREE.TorusGeometry(0.4, 0.035, 4, 18), 0x3a3f4f, { p: [0, 0.22, 0.02], r: [Math.PI / 2 + 0.35, 0, 0], s: [1.08, 1, 1] });
       for (const sx of [-1, 1]) {
-        b.add(new THREE.TorusGeometry(0.1, 0.03, 8, 16), 0x3a3f4f, { p: [sx * 0.14, 0.32, -0.33], r: [-0.55, sx * 0.2, 0], mat: 'metal' });
+        b.add(new THREE.TorusGeometry(0.1, 0.03, 5, 10), 0x3a3f4f, { p: [sx * 0.14, 0.32, -0.33], r: [-0.55, sx * 0.2, 0], mat: 'metal' });
         b.add(new THREE.CircleGeometry(0.09, 16), 0x7fd8ff, { p: [sx * 0.14, 0.32, -0.335], r: [-0.55 + Math.PI, sx * 0.2, 0], mat: 'gloss' });
       }
     },
@@ -272,7 +272,7 @@ export const CHARACTER_DEFS = {
     torso(b, fur) {
       torso(b, fur, CREAM, { hand: 0x3a2618 });
       // pañuelo
-      b.add(new THREE.TorusGeometry(0.2, 0.06, 8, 18), 0xffd166, { p: [0, 0.58, -0.02], r: [Math.PI / 2, 0, 0] });
+      b.add(new THREE.TorusGeometry(0.2, 0.06, 5, 12), 0xffd166, { p: [0, 0.58, -0.02], r: [Math.PI / 2, 0, 0] });
     },
     tail(b, fur) {
       // cola esponjosa con punta blanca, se curva hacia arriba
@@ -324,7 +324,7 @@ export const CHARACTER_DEFS = {
     torso(b, fur) {
       torso(b, fur, 0xe0b98c, { scale: 1.22, armR: 0.11, handFn: pawFingers(shade(fur, -0.05), 3, 0x4a2c12, 0.035) });
       // pañoleta roja
-      b.add(new THREE.TorusGeometry(0.23, 0.07, 8, 18), 0xe63946, { p: [0, 0.6, -0.02], r: [Math.PI / 2, 0, 0] });
+      b.add(new THREE.TorusGeometry(0.23, 0.07, 5, 12), 0xe63946, { p: [0, 0.6, -0.02], r: [Math.PI / 2, 0, 0] });
       b.add(cone(0.14, 0.22, 3), 0xe63946, { p: [0, 0.5, -0.27], r: [Math.PI + 0.4, 0, 0], s: [1, 1, 0.4] });
     },
     tail(b, fur) {
@@ -339,11 +339,11 @@ export const CHARACTER_DEFS = {
       for (const sx of [-1, 1]) b.limb([sx * 0.4, 0.45, -1.4], [sx * 0.35, 0.5, -1.15], 0.05, 0x3a3f4f, { cyl: true });
       // tronquito de troncos atrás (detalle de leñador)
       for (const sx of [-1, 1]) {
-        b.add(new THREE.CylinderGeometry(0.13, 0.13, 0.6, 10), 0x8b5a2b, { p: [sx * 0.2, 1.05, 1.15], r: [0, 0, Math.PI / 2] });
-        b.add(new THREE.CylinderGeometry(0.11, 0.11, 0.61, 10), 0xe0b98c, { p: [sx * 0.2, 1.05, 1.15], r: [0, 0, Math.PI / 2] });
+        b.add(new THREE.CylinderGeometry(0.13, 0.13, 0.6, 8), 0x8b5a2b, { p: [sx * 0.2, 1.05, 1.15], r: [0, 0, Math.PI / 2] });
+        b.add(new THREE.CylinderGeometry(0.11, 0.11, 0.61, 8), 0xe0b98c, { p: [sx * 0.2, 1.05, 1.15], r: [0, 0, Math.PI / 2] });
       }
-      b.add(new THREE.CylinderGeometry(0.13, 0.13, 0.6, 10), 0x8b5a2b, { p: [0, 1.25, 1.15], r: [0, 0, Math.PI / 2] });
-      b.add(new THREE.CylinderGeometry(0.11, 0.11, 0.61, 10), 0xe0b98c, { p: [0, 1.25, 1.15], r: [0, 0, Math.PI / 2] });
+      b.add(new THREE.CylinderGeometry(0.13, 0.13, 0.6, 8), 0x8b5a2b, { p: [0, 1.25, 1.15], r: [0, 0, Math.PI / 2] });
+      b.add(new THREE.CylinderGeometry(0.11, 0.11, 0.61, 8), 0xe0b98c, { p: [0, 1.25, 1.15], r: [0, 0, Math.PI / 2] });
     },
   },
 
@@ -388,8 +388,8 @@ export const CHARACTER_DEFS = {
         const a = (i / 60) * Math.PI * 2 * 4;
         pts.push(new THREE.Vector3(Math.cos(a) * 0.17, 0.92 + (i / 60) * 0.55, 1.15 + Math.sin(a) * 0.17));
       }
-      b.add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 120, 0.035, 6), 0xd9dde6, { mat: 'metal' });
-      const pad = new THREE.CylinderGeometry(0.62, 0.62, 0.06, 24, 1, false, 0.35, Math.PI * 2 - 0.7);
+      b.add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 56, 0.04, 4), 0xd9dde6, { mat: 'metal' });
+      const pad = new THREE.CylinderGeometry(0.62, 0.62, 0.06, 14, 1, false, 0.35, Math.PI * 2 - 0.7);
       b.add(pad, 0x52b788, { p: [0, 1.5, 1.15], r: [0.08, Math.PI / 2, 0], mat: 'gloss' });
       for (let i = 0; i < 6; i++) {
         const a = (i / 6) * Math.PI * 2 + 0.5;
@@ -432,7 +432,7 @@ export const CHARACTER_DEFS = {
     torso(b, fur) {
       torso(b, fur, 0xd9dee6, { hand: 0x2b2d42 });
       // bufanda morada
-      b.add(new THREE.TorusGeometry(0.21, 0.07, 8, 18), 0xc77dff, { p: [0, 0.59, -0.02], r: [Math.PI / 2, 0, 0] });
+      b.add(new THREE.TorusGeometry(0.21, 0.07, 5, 12), 0xc77dff, { p: [0, 0.59, -0.02], r: [Math.PI / 2, 0, 0] });
       b.add(rbox(0.13, 0.3, 0.06, 0.03), 0xc77dff, { p: [0.15, 0.42, 0.24], r: [0.3, 0, -0.2] });
     },
     tail(b) {
@@ -443,8 +443,8 @@ export const CHARACTER_DEFS = {
     kart(b) {
       // botes de humo
       for (const sx of [-1, 1]) {
-        b.add(new THREE.CylinderGeometry(0.15, 0.15, 0.5, 12), 0x5a189a, { p: [sx * 0.5, 0.98, 1.05], r: [0.35, 0, 0], mat: 'gloss' });
-        b.add(new THREE.CylinderGeometry(0.155, 0.155, 0.08, 12), 0xd9dde6, { p: [sx * 0.5, 1.2, 0.97], r: [0.35, 0, 0], mat: 'metal' });
+        b.add(new THREE.CylinderGeometry(0.15, 0.15, 0.5, 9), 0x5a189a, { p: [sx * 0.5, 0.98, 1.05], r: [0.35, 0, 0], mat: 'gloss' });
+        b.add(new THREE.CylinderGeometry(0.155, 0.155, 0.08, 9), 0xd9dde6, { p: [sx * 0.5, 1.2, 0.97], r: [0.35, 0, 0], mat: 'metal' });
         b.add(new THREE.CylinderGeometry(0.05, 0.06, 0.12, 8), 0x3a3f4f, { p: [sx * 0.5, 1.28, 0.94], r: [0.35, 0, 0] });
       }
       // antena con banderín

@@ -1,36 +1,33 @@
-# Estado del Agente de UI/Flujo (pausa)
+# Estado del Agente de UI (Paso 1 completo)
 
 ## Hecho
-- `src/ui/styles.js`: hoja de estilos completa (fuente Baloo 2 + fallback, botones arcade, panel, logo animado,
-  selección de personaje y pista, tienda, ajustes, diálogo, HUD, cuenta regresiva, medidor de catapulta,
-  popups, controles táctiles, pausa, resultados, animaciones y media queries para móvil). Exporta `injectStyles()`.
-- `src/ui/dom.js`: `h()`, `button()` con sonido (`uiClick`/`uiBack`), `formatTime`, `ordinal`, `countUp`,
-  `replayAnim`, `hexCss`, `isTouchDevice`.
-- `src/ui/icons.js`: iconos SVG originales (moneda, candado, engrane, pausa, flechas, trofeo, mejoras...).
-- `src/ui/meta.js`: metadatos de UI (nombres y colores de pistas, `nextTrack`, `characterInfo`, `itemInfo`, `UPGRADE_INFO`).
+- Flujo conectado en `src/ui/index.js` (router): título → personaje → pista → carrera → resultados; tienda y ajustes.
+  Esc en menús = atrás. Fundido (`.cr-fader`) al entrar/salir de la carrera.
+- Atajo `?track=&char=[&autopilot=1]` entra directo a la carrera (`autopilot` se pasa a `createRace`); `mode.race = race`.
+- `menuStage.js`: una escena 3D cacheada (entorno snow, props, 3 karts en el título y garaje con plataforma
+  giratoria + `createCharacterPreview`); cámara interpolada y `setViewOffset` para descentrar el preview.
+- `portraits.js`: retratos a WebGLRenderTarget → dataURL (puntos de selección, HUD, podio, tabla).
+- `characters.js` (compra con `save.spend` + `unlock`), `tracks.js` (candados, mejor tiempo/puesto), `shop.js`, `settings.js`
+  (volúmenes en vivo con `audio.setVolumes`, controles, borrar progreso con confirmación).
+- `raceMode.js`: la UI es dueña de la pausa (Esc/P/botón/pestaña oculta → `game.paused`, `race.pause?.(bool)`, evento PAUSE);
+  Reanudar/Reiniciar/Salir. Al salir: `audio.setEngine(-1)` y vuelve a menús (música menu).
+- `hud.js` + `touch.js`: posición, tiempo, progreso con retratos, monedas, velocímetro, objeto, poder, cuenta, medidor
+  de catapulta, banners/popups y controles táctiles (mitades para girar, deslizar arriba = truco, Derrapar/objeto/poder).
+  Lee `race.getPlayerState?.()` y cae a EVENTS/`race.player`/`race.karts` si falta algo.
+- `results.js`: `applyRaceEnd` guarda al instante en RACE_END (monedas, mejor tiempo/puesto, desbloqueo top 3 por TRACK_ORDER);
+  pantalla con podio, tabla, recompensa animada, insignias y Reintentar/Siguiente/Tienda/Menú.
+- `tests/ui-flow.mjs` (`--only=desktop|mobile`): clics/taps reales, 1280×720 y 390×844; capturas `tests/screenshots/ui-*`.
 
-## Dónde quedé
-- Esos 4 módulos **aún no están conectados**: `src/ui/index.js` sigue siendo el stub del orquestador
-  (carrera directa + HUD mínimo). El build pasa y la ruta `?track=&char=` funciona igual que antes.
+## Supuestos / coordinar
+- `reward` de RACE_END = premio por puesto + monedas recogidas; si llega solo el premio por puesto se suman las monedas;
+  si es 0/falta se calcula con `PLACE_REWARDS`. Si `results` trae solo al jugador, el resto se rellena con `race.karts` por progreso.
+- Se asume `getPlayerState().launchMeter` número o `{value,holding}` y `phase` 'countdown'|'catapult' mientras se ve la barra.
+- Gameplay NO debe reaccionar a `controls.pause` (si no, alterna doble).
+- Pausa: `race.update` no se llama mientras `game.paused`.
 
-## Falta (tarea original)
-1. `menuStage.js`: modo 3D de menús en una sola escena: entorno snow + suelo + props y 3 karts girando (título),
-   y un "garaje" en z≈+200 con plataforma giratoria y `createCharacterPreview`; la cámara interpola entre vistas
-   y el encuadre se ajusta según el aspecto. Guardar el modo en caché (sin `dispose`) para reutilizarlo.
-2. `portraits.js`: retratos de personaje renderizados a un WebGLRenderTarget, convertidos a sRGB en JS → dataURL.
-3. Pantallas: `title`, `characterSelect` (carrusel, compra con `save.spend` + `unlock('unlockedCharacters')`),
-   `trackSelect` (candado según `unlockedTracks`), `shop` (`UPGRADE_COSTS`, `setUpgrade`, `purchase`/`error`),
-   `settings` (`audio.setVolumes` + `save.data.settings` + `persist`; reset con confirmación).
-4. `raceMode.js` + `hud.js` + `touch.js`: `createRace`, `mode.race = race`, pausa leyendo `game.input.edges.pause`
-   (llamar `race.pause?.(bool)`, emitir PAUSE, no actualizar la carrera mientras está en pausa), HUD con datos de
-   `race.getPlayerState?.()` y fallbacks a EVENTS/`player`, y `audio.setEngine(-1)` + `playMusic('menu')` al salir.
-5. `results.js`: aplicar el save en RACE_END (monedas, mejor tiempo/posición, desbloqueo top 3 por `TRACK_ORDER`).
-   Asumido: `reward` = premio por puesto + monedas recogidas; si falta, se calcula con `PLACE_REWARDS`.
-6. Nuevo `index.js` (router + atajo de URL) y `tests/ui-flow.mjs` (Playwright, 1280×720 y 390×844 con hasTouch).
+## Notas de prueba
+- El render por software es muy lento: los tests usan timeouts largos y el servidor sin HMR (otros agentes editan `src/` en paralelo
+  y un HMR recargaba la página). Un fallo de import en otra carpeta rompe toda la UI (pasó con `track/decor.js`).
 
-## Roto
-- Nada; el build pasa (`npm run build`).
-
-## Riesgo a coordinar
-- Si gameplay también reacciona a `controls.pause`, la pausa se alternaría dos veces. Propuesta: la UI es dueña
-  de la pausa y gameplay solo expone `race.pause(bool)`.
+## Roto / pendiente
+- Nada conocido. Falta ver el HUD con `getPlayerState` real (objetos, poder, monedas) cuando gameplay lo entregue.

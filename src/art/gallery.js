@@ -152,7 +152,7 @@ if (view === 'chars') {
   camera.position.set(0, 18, -42);
   target.set(0, 3, 6);
 } else if (view === 'particles') {
-  const parts = createParticles(scene);
+  const parts = createParticles(scene, new URLSearchParams(location.search).get("theme") ?? undefined);
   const kinds = ['dust', 'driftSpark', 'boostFlame', 'landing', 'coin', 'itemBox', 'smoke', 'shockwave', 'hit', 'snow', 'ember', 'leaf'];
   const pos = kinds.map((k, i) => new THREE.Vector3(((i % 6) - 2.5) * 6, 0.5, Math.floor(i / 6) * 10 - 4));
   kinds.forEach((k, i) => {

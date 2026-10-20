@@ -1,30 +1,105 @@
-// STUB del orquestador: arranca una carrera directo y muestra un HUD mínimo.
-// El Agente de UI/Flujo lo reemplaza con menús, selección, HUD completo, resultados y tienda.
-// Parámetros de URL útiles para pruebas: ?track=pico|selva|canon&char=tuko  (salta los menús)
-import { createRace } from '../gameplay/index.js';
-import { EVENTS } from '../core/contracts.js';
+// UI: router de pantallas (título → personaje → pista → carrera → resultados, tienda y ajustes).
+// Atajo de URL: ?track=pico|selva|canon&char=tuko[&autopilot=1] salta los menús y entra a la carrera.
+import { h } from './dom.js';
+import { injectStyles } from './styles.js';
+import { createMenuStage } from './menuStage.js';
+import { createRaceMode } from './raceMode.js';
+import { titleScreen } from './title.js';
+import { characterScreen } from './characters.js';
+import { trackScreen } from './tracks.js';
+import { shopScreen } from './shop.js';
+import { settingsScreen } from './settings.js';
+import { audio } from '../audio/index.js';
+
+const SCREENS = { title: titleScreen, characters: characterScreen, tracks: trackScreen, shop: shopScreen, settings: settingsScreen };
 
 export function createUI(game, root) {
+  injectStyles();
   const params = new URLSearchParams(location.search);
-  const trackId = params.get('track') ?? 'pico';
-  const characterId = params.get('char') ?? 'tuko';
+  const fader = h('div', { class: 'cr-fader' });
+  root.appendChild(fader);
 
-  const hud = document.createElement('div');
-  hud.style.cssText = 'position:absolute;top:12px;left:16px;color:#fff;font:700 20px system-ui;text-shadow:0 2px 4px #000';
-  root.appendChild(hud);
+  let stage = null;
+  let menuMode = null;
+  let current = null;
+  let dim = null;
 
-  let status = '';
-  game.events.on(EVENTS.COUNTDOWN, ({ n }) => { status = n > 0 ? String(n) : '¡YA!'; });
-  game.events.on(EVENTS.RACE_END, ({ results }) => { status = `Meta: ${results[0].time.toFixed(2)} s`; });
+  const ctx = { game, root, router: null, stage: null, lastCharacter: null };
 
-  const race = createRace(game, { trackId, characterId });
-  game.setMode({
-    scene: race.scene,
-    race, // expuesto para pruebas (tests/smoke.mjs)
-    update(dt, time) {
-      race.update(dt, time);
-      hud.textContent = `${status}  ${Math.round(race.player.speed * 3.6)} km/h`;
+  function ensureStage() {
+    if (!stage) {
+      stage = createMenuStage(game);
+      ctx.stage = stage;
+      menuMode = { scene: stage.scene, update: (dt, time) => stage.update(dt, time), dispose() {} };
+    }
+    if (game.mode !== menuMode) {
+      game.setMode(menuMode);
+      stage.enter();
+      audio.playMusic('menu');
+    }
+  }
+
+  const router = {
+    go(name, p) {
+      ensureStage();
+      current?.dispose?.();
+      current?.el.remove();
+      dim?.remove();
+      const screen = SCREENS[name](ctx, p);
+      current = screen;
+      if (screen.dim) { dim = h('div', { class: 'cr-screen cr-dim cr-blur', style: { opacity: '.85' } }); root.insertBefore(dim, fader); } else dim = null;
+      root.insertBefore(screen.el, fader);
+      stage.setView(screen.view ?? 'title', screen.offset);
+      if (screen.dim && dim) dim.style.pointerEvents = 'none';
     },
-    dispose: () => race.dispose(),
+  };
+  ctx.router = router;
+
+  // transición con fundido (la construcción de la pista bloquea unos ms)
+  function fadeThen(fn) {
+    fader.classList.add('on');
+    setTimeout(() => {
+      try { fn(); } finally { requestAnimationFrame(() => fader.classList.remove('on')); }
+    }, 300);
+  }
+
+  function clearScreen() {
+    current?.dispose?.();
+    current?.el.remove();
+    dim?.remove();
+    current = null; dim = null;
+  }
+
+  ctx.startRace = (trackId, characterId, opts) => fadeThen(() => {
+    clearScreen();
+    ctx.lastCharacter = characterId;
+    stage?.leave();
+    game.paused = false;
+    game.setMode(createRaceMode(ctx, trackId, characterId, opts));
   });
+
+  ctx.exitRace = (screen = 'title', p) => fadeThen(() => {
+    game.paused = false;
+    audio.setEngine(-1);
+    router.go(screen, p);
+  });
+
+  // Esc en menús = atrás
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Escape' && current?.onBack && game.mode === menuMode && !root.querySelector('.cr-dialog')) {
+      e.preventDefault();
+      audio.play('uiBack');
+      current.onBack();
+    }
+  });
+
+  if (params.get('track')) {
+    const trackId = params.get('track');
+    const char = params.get('char') ?? game.save.data.selectedCharacter ?? 'tuko';
+    ctx.lastCharacter = char;
+    game.setMode(createRaceMode(ctx, trackId, char, { autopilot: params.get('autopilot') === '1' }));
+  } else {
+    router.go('title');
+  }
+  window.__ui = { router, ctx };
 }

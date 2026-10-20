@@ -1,29 +1,31 @@
-# Estado: Agente de Pistas (src/track) — pausa
+# Estado: Agente de Pistas (src/track) — Paso 1 hecho
 
-## Hecho (build OK, smoke sin errores en pico/selva/canon)
+## Hecho (build OK, track-check OK, smoke sin errores en pico/selva/canon)
 - Pistas por datos en `src/track/defs/{pico,selva,canon}.js` (2.23–2.33 km, los 6 tipos de tramo).
-- `path.js`: línea central integrando rumbo/pendiente (curvatura continua) y tabla de frames cada ~1 m
-  (pos, tangent, right, up, halfWidth, tipo, hasGround, ceil, part, curvatura). Sin Three/DOM.
-- `ballistics.js`: saltos con g=28. Hueco sin suelo calculado para que 22 m/s cruce (+2 m de margen).
-  Aterrizaje curvo tipo colina de salto de esquí: impacto 16–27° a 28–35 m/s y 31° a 40–45 m/s; sobran ~40 m tras la caída a 45 m/s.
-- `query.js`: sample(t, out?) interpolando la tabla y closestT local (±60 m) con respaldo global.
-- `ground.js`: getGroundAt(pos, out?) con rejilla espacial XZ de triángulos (sin Raycaster).
-- `road.js`: suelo por partes con textura procedural, bordillos, rampas con chevrones, faldones,
-  puentes con barandas (postes instanciados), líneas de salida/meta. `lighting.js`: cuevas oscuras con luz de faroles horneada.
-- `pickups.js`: ~150 monedas (filas + arcos sobre saltos), 4 filas de cajas "?", boost pads animados (InstancedMesh).
-- `terrain.js` (recién escrito; la pista carga pero AÚN NO REVISÉ CAPTURAS): laderas por perfiles, cañón bajo
-  puentes/huecos, túneles con techo y portales, terreno lejano con montañas, agua/lava animada, cascadas (selva) y ríos de lava (cañón).
-- `tests/track-check.mjs`: largo, tipos, saltos (alcance e impacto por velocidad), autocruce y radio mínimo.
+- `path.js` (frames cada ~1 m), `ballistics.js` (saltos g=28, aterrizajes curvos), `query.js` (sample/closestT),
+  `ground.js` (getGroundAt con rejilla XZ), `road.js`, `lighting.js` (luz de cueva horneada), `pickups.js`.
+- `terrain.js` revisado con capturas: laderas, cañón con agua/lava, portales, cuevas, ríos de lava. Cambios del paso:
+  portales/laderas del cañón con algo de emisivo (estaban casi negros) y cascadas de la selva rehechas como cinta que
+  sigue el perfil de la pared del cañón (antes quedaban enterradas); `ctx.waterfalls` evita poner árboles encima.
+- `decor.js` completo (PRNG con semilla fija, todo determinista):
+  - Árboles/rocas/arbustos/flores/hongos/cactus/cristales en InstancedMesh por trozos de 150 m (culling por trozo),
+    en 3 bandas (cerca/medio/lejos) según el perfil lateral del terreno; sin solaparse ni caer sobre otro tramo de pista.
+  - Muñecos de nieve y cristales grandes (pico), ruinas (selva), géiseres y cristales rojos (cañón), faroles de cueva
+    alineados con la luz horneada (máx. 4 PointLight por pista), banderines en salida/meta, carteles de curva
+    antes de curvas de ≥30° (en el lado exterior, `scale.x=-1` si gira a la izquierda).
+- Culling por distancia (`createDistanceCuller` en `index.js`): oculta mallas más allá de la niebla de cada tema
+  (580/460/440 m). Bajó los draw calls de ~670 a ~200.
+- `tests/track-views.mjs`: congela la carrera, mueve `__game.camera` a 16 vistas por pista (salida, cueva boca/dentro/salida,
+  puente, rampa, salto, aterrizaje, curva, slalom, cascada, meta) y guarda `tests/screenshots/view-<pista>-<vista>.png`;
+  imprime draw calls y triángulos. Opciones: `--track=pico,selva`, `--only=salida,cueva-boca`, `--debug`.
+  Es lento con SwiftShader (~40 s por vista); no correr varias instancias a la vez.
 
-## En qué quedé
-- Acababa de arreglar un NaN en el techo de las cuevas (terrain.js). Smoke OK, pero no revisé las capturas visualmente.
+## Presupuesto medido (peor vista, 1280x720)
+- pico: 200 calls, 229k tris | selva: 211 calls, 573k tris | canon: 216 calls, 269k tris (meta: <400 y <1.5 M).
 
-## Pendiente (próximos pasos)
-1. `decor.js` todavía es un stub (solo arcos de salida/meta): falta colocar props con createProp(kind, theme, {random})
-   instanciados por trozos, con PRNG: árboles/rocas por bandas de distancia, faroles en cuevas (posiciones en
-   `light.lanterns`), banderines en la salida, carteles antes de curvas cerradas, puertas de slalom en las orillas,
-   géiseres (cañón), cristales y muñecos de nieve (pico).
-2. Script `tests/track-views.mjs`: reemplazar `__game.mode.update` por `track.update` y mover `__game.camera` a la salida, la cueva,
-   el puente, el salto y la meta de cada pista; revisar las capturas y corregir terrain.js (cascadas, portales, compresión en curvas).
-3. Las pendientes medias quedaron altas (pico 17°, canon 19°) por los aterrizajes largos: bajar `slope` de los tramos normales.
+## Pendiente / ideas
+1. Las pendientes medias siguen altas (pico 17°, canon 19°) por los aterrizajes largos: bajar `slope` de tramos normales (Paso 2, con Físicas).
+2. Portal de cueva del cañón sigue oscuro y plano; podría llevar rocas/estalactitas. Puertas de slalom en las orillas (no hechas).
+3. Los banderines y géiseres son objetos sueltos (animan con onBeforeRender del arte); son pocos.
 4. Propuesta de contrato: documentar los parámetros opcionales `sample(t, out)` y `getGroundAt(pos, out)`.
+5. Decor depende de `ctx.profiles` y `ctx.waterfalls` creados por terrain.js (orden en `index.js`: terrain antes que decor).
